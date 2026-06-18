@@ -1,0 +1,6 @@
+{
+  "name": "Bible Manna",
+  "description": "Your premium daily spiritual nourishment companion. Dynamic daily Scripture verses, beautiful custom share card creation, prayer journaling, and AI-guided biblical answers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
