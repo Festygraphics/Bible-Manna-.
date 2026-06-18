@@ -49,6 +49,13 @@ import {
   generateLeaderboardData 
 } from "./data";
 
+const getAppBaseUrl = () => {
+  const href = window.location.href;
+  const cleanUrl = href.split("?")[0].split("#")[0];
+  const lastSlashIndex = cleanUrl.lastIndexOf("/");
+  return cleanUrl.substring(0, lastSlashIndex + 1);
+};
+
 export default function App() {
   // ── TELEGRAM HAPTIC FEEDBACK HELPERS ──
   const triggerHapticImpact = (style: "light" | "medium" | "heavy" | "rigid" | "soft" = "light") => {
@@ -249,7 +256,7 @@ export default function App() {
 
   // ── TON CONNECT INITIALIZATION ──
   useEffect(() => {
-    const manifestUri = `${window.location.origin}/tonconnect-manifest.json`;
+    const manifestUri = getAppBaseUrl() + "tonconnect-manifest.json";
     const tonUI = new TonConnectUI({
       manifestUrl: manifestUri
     });
@@ -1444,7 +1451,7 @@ export default function App() {
   // ── PREMIUM REFERRAL SYSTEM LOGIC ──
   const handleCopyReferralLink = () => {
     const userId = currentUser?.id || "believer_user";
-    const refLink = `${window.location.origin}/invite?ref=${userId}`;
+    const refLink = getAppBaseUrl() + `invite?ref=${userId}`;
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(refLink)
@@ -3721,7 +3728,7 @@ export default function App() {
                       <Share2 size={12} /> Share Invite Link
                     </button>
                     <a
-                      href={`https://t.me/share/url?url=${encodeURIComponent(window.location.origin + '/invite?ref=' + (currentUser?.id || "believer"))}&text=${encodeURIComponent("Join me on Bible Manna — daily devotionals, scriptures, and live spiritual AI counseling! 📖🕊️")}`}
+                      href={`https://t.me/share/url?url=${encodeURIComponent(getAppBaseUrl() + 'invite?ref=' + (currentUser?.id || "believer"))}&text=${encodeURIComponent("Join me on Bible Manna — daily devotionals, scriptures, and live spiritual AI counseling! 📖🕊️")}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="py-2.5 px-3 bg-[#229ED9]/15 hover:bg-[#229ED9]/25 border border-[#229ED9]/30 text-[#229ED9] rounded-xl text-[10px] uppercase tracking-wider font-bold transition-all cursor-pointer text-center flex items-center justify-center gap-1.5"
