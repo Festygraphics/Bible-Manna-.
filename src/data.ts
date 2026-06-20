@@ -175,3 +175,69 @@ export function generateLeaderboardData() {
     ] as any[]
   };
 }
+
+export function getDailyVerseDevotion(ref: string, text: string) {
+  const map: Record<string, { reflection: string; prayer: string; focus: string[] }> = {
+    'John 3:16': {
+      reflection: "This verse captures the very heart of the Gospel: God's sacrificial love. Your ultimate worth is defined by His love for you, a love that went to the Cross to ensure you are never separated from Him. Rest, believe, and rejoice in this beautiful truth.",
+      prayer: "Father, thank You for Your ultimate gift of love. Help me live each moment today in the peace of knowing I am deeply loved, forgiven, and eternally yours. Amen.",
+      focus: ["Grace", "Eternal Love", "Salvation"]
+    },
+    'Philippians 4:13': {
+      reflection: "True strength doesn't come from your human capacity, but from your divine connection. When you feel exhausted or inadequate, Christ's infinite power is made perfect in your weakness. Step forward with holy confidence today.",
+      prayer: "Lord Jesus, when my own hands grow tired, pour Your divine strength into my spirit. Let me walk in victor's peace, knowing You are guiding my steps. Amen.",
+      focus: ["Strength", "Faith", "Endurance"]
+    },
+    'Jeremiah 29:11': {
+      reflection: "God is not surprised by your past nor worried about your future. He has drawn up a blueprint of peace, hope, and prosperity for your life. Even in seasons of waiting, His intentions for you are extraordinarily good.",
+      prayer: "Heavenly Father, I surrender my worries about tomorrow into Your secure hands. I trust Your perfect plans and quiet my restless heart. Amen.",
+      focus: ["God's Plan", "Hope", "Peace"]
+    },
+    'Psalm 23:1': {
+      reflection: "A sheep is fully content because the Shepherd is fully capable. With the Lord as your Shepherd, you are never lacking, never forgotten, and always provided for. You do not need to struggle for your daily bread; He feeds your soul.",
+      prayer: "Gentle Shepherd, lead me beside the quiet waters today. Restore my weary mind and guide me in paths of righteousness for Your name's sake. Amen.",
+      focus: ["Provision", "Rest", "Comfort"]
+    },
+    'Romans 8:28': {
+      reflection: "Every broken piece, every delayed breakthrough, and every unexpected struggle is being woven by God into a masterwork of ultimate good. He is working behind the scenes on your behalf. Trust the process.",
+      prayer: "O Lord, although I cannot see the full picture, I choose to trust Your steady hands. Weave my trials into a testimony for Your glory. Amen.",
+      focus: ["Trust", "Providence", "Grace"]
+    },
+    'Isaiah 40:31': {
+      reflection: "Rest is not a luxury; it is a spiritual practice of hope. Those who wait upon the Lord find fresh reserves of supernatural strength. Rise above the noise and let your spiritual wings carry you high today.",
+      prayer: "Father, teach me to wait on Your timing. Give me wings of faith to mount up, legs of grace to run and not grow weary, and a steady heart to walk. Amen.",
+      focus: ["Renewal", "Patience", "Flight"]
+    },
+    'Proverbs 3:5-6': {
+      reflection: "Leaning on our own understanding is like balancing on a broken reed. Let go of the need to figure out every single detail. Hand the steering wheel over to God; His straight path guidance is perfect.",
+      prayer: "Lord, I submit my plans, my questions, and my pride. Direct my steps today and make the rough paths straight before me. Amen.",
+      focus: ["Wisdom", "Trust", "Pathways"]
+    },
+    'Matthew 6:33': {
+      reflection: "Anxiety comes when we try to secure tomorrow on our own terms. When you seek the Kingdom first, the King takes full responsibility for your earthly needs. Let His priority become your peace today.",
+      prayer: "Precious King, align my desires with Your heart. Let me seek Your face first, trusting that Your loving provision will supply all else. Amen.",
+      focus: ["Priority", "Kingdom", "Provision"]
+    },
+    'Psalm 46:1': {
+      reflection: "Storms will rage and mountains may shake, but the Fortress of Heaven remains unshaken. God isn't watching your storm from a distance; He is right inside of it with you, as your ever-present refuge.",
+      prayer: "God, You are my safe refuge. When the winds of life blow fiercely, let me find perfect shelter under the shadow of Your wings. Amen.",
+      focus: ["Shelter", "Refuge", "Presence"]
+    },
+    '2 Timothy 1:7': {
+      reflection: "Fear is a thief, but it is not from God. The Holy Spirit has sealed you with power to overcome, love to serve, and a sound mind to think clearly under pressure. Breathe out fear, breathe in His Spirit.",
+      prayer: "Holy Spirit, fill me with Your authority. Drive away all timidity and anxiety, replacing them with Your boundless courage and perfect love. Amen.",
+      focus: ["Courage", "Clarity", "Sound Mind"]
+    }
+  };
+
+  const cleanRef = ref && ref.trim();
+  if (cleanRef && map[cleanRef]) {
+    return map[cleanRef];
+  }
+
+  return {
+    reflection: `The word of scripture in ${ref} calls us to align our hearts with God's loving-kindness. When we meditate on this powerful truth, we invite divine grace, wisdom, and eternal safety to renew our minds and establish our paths today.`,
+    prayer: `Dear God, thank You for Your scripture: "${text}". I pray that its truth deeply penetrates my heart today. Light my path, strengthen my weakness, and fill me with Your joy. Amen.`,
+    focus: ["Wisdom", "Meditation", "Scripture"]
+  };
+}

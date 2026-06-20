@@ -1349,8 +1349,143 @@ The original Hebrew word for "lamp" (ner) refers to a small clay vessel filled w
 🙏 Heavenly Father, guide my wonderful friend along the paths of righteousness. Fill their day with divine opportunities, clear guidance, and endless comfort. Bless their search of Your timeless truth. Amen. 📖`;
 }
 
+const notifiedReminderKeys = new Set<string>();
+
+async function sendTelegramMessage(chatId: string, text: string): Promise<boolean> {
+  if (!BOT_TOKEN) return false;
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: text,
+        parse_mode: "Markdown"
+      })
+    });
+    const result = await response.json();
+    return !!result.ok;
+  } catch (err) {
+    console.error(`[NOTIFICATION SCHEDULER] Failed to send telegram message to ${chatId}:`, err);
+    return false;
+  }
+}
+
+// REST endpoint for direct test push alerts
+app.post("/api/telegram-test-notification", async (req, res) => {
+  const { telegram_id } = req.body;
+  if (!telegram_id) {
+    res.status(400).json({ error: "telegram_id is required" });
+    return;
+  }
+
+  if (!BOT_TOKEN) {
+    res.json({ success: false, reason: "bot_token_missing" });
+    return;
+  }
+
+  const msg = `🔔 *Bible Manna Alert Test* ⚡\n\nBlessed assurance! Your system push notifications via Telegram are beautifully functional. You will receive your selected morning devotions and streak protection guides on time. 🙌\n\n👉 *Tap the WebApp Menu button below to log in!*`;
+  try {
+    const success = await sendTelegramMessage(String(telegram_id), msg);
+    res.json({ success });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Periodic Scheduler checks every 60 seconds
+function startNotificationScheduler() {
+  console.log("[NOTIFICATION SCHEDULER] Service initialized successfully.");
+  setInterval(async () => {
+    if (!supabase || !BOT_TOKEN) {
+      return;
+    }
+
+    try {
+      const now = new Date();
+      // UTC Minutes from Midnight
+      const currentUTCMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+      const todayStr = now.toISOString().slice(0, 10); // "YYYY-MM-DD"
+
+      // Pull users that are valid
+      const { data: users, error } = await supabase
+        .from("users")
+        .select("telegram_id, first_name, reminders");
+
+      if (error || !users) {
+        return;
+      }
+
+      for (const user of users) {
+        if (!user.telegram_id || !user.reminders) continue;
+
+        let rems: any = null;
+        try {
+          rems = typeof user.reminders === "string" ? JSON.parse(user.reminders) : user.reminders;
+        } catch (e) {
+          continue;
+        }
+
+        if (!rems) continue;
+
+        // timezoneOffset is in minutes (local - UTC), so UTCTimeInMinutes = localTimeInMinutes + timezoneOffset
+        const tzOffset = rems.timezoneOffset !== undefined ? Number(rems.timezoneOffset) : 0;
+
+        // 1. Morning devotion reminder check
+        if (rems.morning?.enabled && rems.morning?.time) {
+          const [hour, min] = rems.morning.time.split(":").map(Number);
+          if (!isNaN(hour) && !isNaN(min)) {
+            const localMinutes = hour * 60 + min;
+            const targetUTCMinutes = (localMinutes + tzOffset + 1440) % 1440;
+
+            if (currentUTCMinutes === targetUTCMinutes) {
+              const trackingKey = `morning_${user.telegram_id}_${todayStr}`;
+              if (!notifiedReminderKeys.has(trackingKey)) {
+                notifiedReminderKeys.add(trackingKey);
+                
+                const praiseMsg = `🌅 *Your Daily Morning Devotion is Ready* 📖\n\nBlessed morning, ${user.first_name || "Believer"}! Step into His grace. A beautiful scripture and encouraging reflection are waiting for your soul today.\n\n✨ "Your word is a lamp for my feet, a light on my path." — Psalm 119:105\n\n👉 *Tap the WebApp Menu button below to read!*`;
+                await sendTelegramMessage(user.telegram_id, praiseMsg);
+              }
+            }
+          }
+        }
+
+        // 2. Streak protection reminder check
+        if (rems.streak?.enabled && rems.streak?.time) {
+          const [hour, min] = rems.streak.time.split(":").map(Number);
+          if (!isNaN(hour) && !isNaN(min)) {
+            const localMinutes = hour * 60 + min;
+            const targetUTCMinutes = (localMinutes + tzOffset + 1440) % 1440;
+
+            if (currentUTCMinutes === targetUTCMinutes) {
+              const trackingKey = `streak_${user.telegram_id}_${todayStr}`;
+              if (!notifiedReminderKeys.has(trackingKey)) {
+                notifiedReminderKeys.add(trackingKey);
+
+                const streakMsg = `🔥 *Manna Streak Protection Alert* 🛡️\n\nHey ${user.first_name || "Believer"}, your vertical walk is precious! Do not let your daily devotion streak fade away.\n\nTake just 2 minutes right now to check today's Scripture and keep your daily streak alive! 🙌\n\n👉 *Tap the WebApp Menu button below to continue!*`;
+                await sendTelegramMessage(user.telegram_id, streakMsg);
+              }
+            }
+          }
+        }
+      }
+
+      // Keep cache clean
+      if (notifiedReminderKeys.size > 10000) {
+        notifiedReminderKeys.clear();
+      }
+
+    } catch (schedErr) {
+      console.error("[NOTIFICATION SCHEDULER ERROR]:", schedErr);
+    }
+  }, 60000); // Poll once every 60 seconds
+}
+
 // Vite / static file serving middleware config
 async function startServer() {
+  // Start the background notification scheduler
+  startNotificationScheduler();
+
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({

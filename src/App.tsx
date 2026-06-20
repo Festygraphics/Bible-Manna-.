@@ -26,7 +26,9 @@ import {
   ChevronRight,
   Info,
   Trash2,
-  Copy
+  Copy,
+  Feather,
+  Quote
 } from "lucide-react";
 import { 
   User as UserType, 
@@ -46,7 +48,8 @@ import {
   INITIAL_READING_PLANS, 
   CARD_THEMES, 
   rotateDayVerse, 
-  generateLeaderboardData 
+  generateLeaderboardData,
+  getDailyVerseDevotion
 } from "./data";
 
 const getAppBaseUrl = () => {
@@ -1035,6 +1038,31 @@ The Greek word used for love in Romans is *agape* — representing a covenantal,
     }
   };
 
+  const handleSaveDailyPrayerToJournal = (text: string) => {
+    triggerHapticNotification("success");
+    const newPrayer: PrayerType = {
+      id: `prayer-${Date.now()}`,
+      user_id: currentUser?.id || 0,
+      content: text,
+      created_at: new Date().toISOString(),
+      answered: false
+    };
+
+    const updated = [newPrayer, ...prayers];
+    setPrayers(updated);
+    localStorage.setItem("bm_prayers", JSON.stringify(updated));
+    showToast("Today's prayer added to your journal! 🕊️");
+    
+    // Record daily devotion activity for habit streak progression
+    recordDailyActivity();
+
+    // Update metric count 
+    if (currentUser) {
+      updateLeaderboards(currentUser, currentUser.verses_read);
+      triggerSupabaseSync(currentUser, updated, savedVerses, chatHistory, readingPlans, reminders);
+    }
+  };
+
   const handleMarkPrayerAnswered = (id: string) => {
     triggerHapticNotification("success");
     const updated = prayers.map(p => {
@@ -1072,7 +1100,8 @@ The Greek word used for love in Romans is *agape* — representing a covenantal,
       [type]: {
         ...reminders[type],
         enabled: !reminders[type].enabled
-      }
+      },
+      timezoneOffset: new Date().getTimezoneOffset()
     };
     setReminders(updated);
     localStorage.setItem("bm_reminders", JSON.stringify(updated));
@@ -1092,7 +1121,8 @@ The Greek word used for love in Romans is *agape* — representing a covenantal,
       [type]: {
         ...reminders[type],
         time: val
-      }
+      },
+      timezoneOffset: new Date().getTimezoneOffset()
     };
     setReminders(updated);
     localStorage.setItem("bm_reminders", JSON.stringify(updated));
@@ -1640,6 +1670,25 @@ The Greek word used for love in Romans is *agape* — representing a covenantal,
 
   const triggerTestNotification = () => {
     triggerHapticNotification("success");
+    
+    // If in Telegram mode, trigger automated Bot-level test notification via server proxy
+    if (currentUser?.id) {
+      fetch("/api/telegram-test-notification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ telegram_id: currentUser.id })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          showToast("⚡ Test alert sent to your Telegram private chat!");
+        }
+      })
+      .catch(err => {
+        console.warn("Telegram bot test alert skipped or failed:", err);
+      });
+    }
+
     if (!("Notification" in window)) {
       showToast("⚠️ Web notifications not supported. Setting fallback in-app alert!");
       setInAppAlarmNotification({
@@ -1657,7 +1706,9 @@ The Greek word used for love in Romans is *agape* — representing a covenantal,
           body: "Blessed assurance! Your system notifications are beautifully functional in this environment.",
           icon: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=120"
         });
-        showToast("Instant test notification dispatched.");
+        if (!currentUser?.id) {
+          showToast("Instant test notification dispatched.");
+        }
       } catch (e) {
         setInAppAlarmNotification({
           type: "morning",
@@ -1665,7 +1716,9 @@ The Greek word used for love in Romans is *agape* — representing a covenantal,
           body: "Blessed assurance! Your screen level notifications are beautifully active in this browser sandbox.",
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         });
-        showToast("Test notification shown in-app.");
+        if (!currentUser?.id) {
+          showToast("Test notification shown in-app.");
+        }
       }
     } else {
       Notification.requestPermission().then(permission => {
@@ -1677,9 +1730,13 @@ The Greek word used for love in Romans is *agape* — representing a covenantal,
               icon: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=120"
             });
           } catch (err) {}
-          showToast("Instant test notification dispatched!");
+          if (!currentUser?.id) {
+            showToast("Instant test notification dispatched!");
+          }
         } else {
-          showToast("⚠️ Please approve the permission prompt to test native alerts.");
+          if (!currentUser?.id) {
+            showToast("⚠️ Please approve the permission prompt to test native alerts.");
+          }
         }
       });
     }
@@ -2150,174 +2207,174 @@ The Greek word used for love in Romans is *agape* — representing a covenantal,
             )}
 
             {/* 2. THE MAIN HOME SCREEN */}
-            {currentScreen === "home" && (
-              <motion.div
-                key="home"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="space-y-6 pt-2"
-              >
-                {/* Visual Devotional Card */}
-                <div 
-                  style={{ height: "405.253px" }}
-                  className="relative overflow-hidden rounded-[32px] p-8 glass-premium flex flex-col justify-center min-h-[280px] group transition-all duration-300 hover:border-[#D4A843]/30"
+            {currentScreen === "home" && (() => {
+              const devotionInfo = getDailyVerseDevotion(todayVerse.ref, todayVerse.text);
+              return (
+                <motion.div
+                  key="home"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="space-y-6 pt-2"
                 >
-                  <span className="absolute top-0 right-0 p-6 text-7xl opacity-[0.04] font-serif italic text-[#EEE9E0] select-none pointer-events-none">“</span>
-                  
-                  <div className="flex items-center gap-2 text-xs font-semibold tracking-[0.2em] text-[#D4A843] uppercase mb-5">
-                    <Sparkles size={14} />
-                    <span style={{ height: "15.9896px" }}>Verse of the Day</span>
-                  </div>
-
-                  <p className="font-serif text-2xl italic leading-relaxed text-[#EEE9E0] mb-5 drop-shadow">
-                    "{todayVerse.text}"
-                  </p>
-                  
-                  <span className="block font-serif text-base font-semibold text-[#D4A843]/90 mb-6 italic">
-                    — {todayVerse.ref}
-                  </span>
-
-                  <div className="flex items-center gap-2 pt-2">
-                    <button 
-                      onClick={() => handleShareButtonTrigger(todayVerse)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-3 px-3 rounded-xl bg-white/5 border border-white/10 hover:border-[#D4A843]/30 hover:bg-white/10 active:scale-97 text-xs font-semibold text-[#EEE9E0] transition-all cursor-pointer truncate"
-                    >
-                      <Share2 size={13} className="text-[#D4A843]" />
-                      <span>Share Card</span>
-                    </button>
+                  {/* Visual Devotional Card */}
+                  <div 
+                    className="relative overflow-hidden rounded-[32px] p-8 glass-premium flex flex-col justify-center min-h-[250px] group transition-all duration-300 hover:border-[#D4A843]/30"
+                  >
+                    <span className="absolute top-0 right-0 p-6 text-7xl opacity-[0.04] font-serif italic text-[#EEE9E0] select-none pointer-events-none">“</span>
                     
-                    <button 
-                      onClick={() => {
-                        const exactBook = todayVerse.ref.split(" ")[0].toLowerCase();
-                        setCurrentBook(exactBook);
-                        goTo("read");
-                      }}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-3 px-3 rounded-xl bg-white/5 border border-white/10 hover:border-[#D4A843]/30 hover:bg-white/10 active:scale-97 text-xs font-semibold text-[#EEE9E0] transition-all cursor-pointer truncate"
-                    >
-                      <BookOpen size={13} className="text-[#D4A843]" />
-                      <span>Read book</span>
-                    </button>
+                    <div className="flex items-center gap-2 text-xs font-semibold tracking-[0.2em] text-[#D4A843] uppercase mb-4">
+                      <Sparkles size={14} />
+                      <span>Verse of the Day</span>
+                    </div>
 
-                    <button 
-                      onClick={() => {
-                        goTo("ask");
-                        setTimeout(() => {
-                          useChatPromptChip(`What is the historical context of ${todayVerse.ref}, and how does it apply to us today?`);
-                        }, 200);
-                      }}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-3 px-3 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/30 text-[#D4A843] hover:bg-[#D4A843]/20 active:scale-97 text-xs font-bold transition-all cursor-pointer truncate"
-                    >
-                      <MessageSquare size={13} />
-                      <span>Ask AI</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Dashboard grid quick routes */}
-                <div>
-                  <h3 className="text-[10px] uppercase tracking-[0.2em] text-[#EEE9E0]/40 font-bold mb-3 pl-1">Quick Navigation</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                    <p className="font-serif text-xl italic leading-relaxed text-[#EEE9E0] mb-4 drop-shadow">
+                      "{todayVerse.text}"
+                    </p>
                     
-                    <div 
-                      onClick={() => goTo("ask")}
-                      className="p-5 rounded-[24px] glass-premium-interact cursor-pointer flex flex-col justify-between"
-                    >
-                      <div className="w-12 h-12 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/20 flex items-center justify-center text-[#D4A843] mb-4">
-                        <MessageSquare size={20} />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-white mb-0.5">Ask the Bible</h4>
-                        <p className="text-[10px] text-[#EEE9E0]/50">Answers powered by AI</p>
-                      </div>
-                    </div>
+                    <span className="block font-serif text-sm font-semibold text-[#D4A843]/90 mb-5 italic">
+                      — {todayVerse.ref}
+                    </span>
 
-                    <div 
-                      onClick={() => goTo("read")}
-                      className="p-5 rounded-[24px] glass-premium-interact cursor-pointer flex flex-col justify-between"
-                    >
-                      <div className="w-12 h-12 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/20 flex items-center justify-center text-[#D4A843] mb-4">
-                        <BookOpen size={20} />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-white mb-0.5">Read Bible</h4>
-                        <p className="text-[10px] text-[#EEE9E0]/50">All 66 full scripture books</p>
-                      </div>
-                    </div>
-
-                    <div 
-                      onClick={() => goTo("pray")}
-                      className="p-5 rounded-[24px] glass-premium-interact cursor-pointer flex flex-col justify-between"
-                    >
-                      <div className="w-12 h-12 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/20 flex items-center justify-center text-[#D4A843] mb-4">
-                        <Heart size={20} className="fill-[#D4A843] text-[#D4A843]" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-white mb-0.5">Prayer Journal</h4>
-                        <p className="text-[10px] text-[#EEE9E0]/50">Save & celebrate prayers</p>
-                      </div>
-                    </div>
-
-                    <div 
-                      onClick={() => goTo("leaderboard")}
-                      className="p-5 rounded-[24px] glass-premium-interact cursor-pointer flex flex-col justify-between"
-                    >
-                      <div className="w-12 h-12 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/20 flex items-center justify-center text-[#D4A843] mb-4">
-                        <Trophy size={20} />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-white mb-0.5">Leaderboard</h4>
-                        <p className="text-[10px] text-[#EEE9E0]/50">Global believers rank</p>
-                      </div>
-                    </div>
-
-                  </div>
-                </div>
-
-                {/* Section active reading plans */}
-                <div>
-                  <h3 className="text-[10px] uppercase tracking-[0.2em] text-[#EEE9E0]/40 font-bold mb-3 pl-1">Active Reading Plans</h3>
-                  <div className="space-y-3.5">
-                    {readingPlans.slice(0, 3).map(plan => (
-                      <div 
-                        key={plan.id}
-                        className="p-5 rounded-[24px] glass-premium flex items-center justify-between gap-4 transition-all duration-300 hover:border-[#D4A843]/30"
+                    <div className="flex items-center gap-2 pt-1">
+                      <button 
+                        onClick={() => handleShareButtonTrigger(todayVerse)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-white/5 border border-white/10 hover:border-[#D4A843]/30 hover:bg-white/10 active:scale-97 text-xs font-semibold text-[#EEE9E0] transition-all cursor-pointer truncate"
                       >
-                        <div className="p-3.5 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/20 self-start text-[#D4A843]">
-                          <Plus size={16} />
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="text-sm font-semibold text-white">{plan.name}</h4>
-                          <p className="text-xs text-[#EEE9E0]/50 leading-relaxed mt-0.5">{plan.desc}</p>
-                          {plan.started ? (
-                            <div className="mt-3">
-                              <div className="flex justify-between text-[10px] text-[#EEE9E0]/50 mb-1 font-semibold">
-                                <span>Habit progress</span>
-                                <span>{plan.progress}%</span>
-                              </div>
-                              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                                <div className="h-full bg-gradient-to-r from-[#D4A843] to-[#F0CC6A]" style={{ width: `${plan.progress}%` }} />
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="inline-block mt-2.5 text-[10px] text-[#D4A843] font-semibold">{plan.days} Days schedule</span>
-                          )}
-                        </div>
-                        {!plan.started && (
-                          <button 
-                            onClick={() => handleStartPlan(plan.id)}
-                            className="py-1.5 px-4 bg-[#D4A843] text-black hover:opacity-90 font-bold text-[10px] rounded-lg cursor-pointer whitespace-nowrap uppercase tracking-wider transition-all"
-                          >
-                            Start
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                        <Share2 size={13} className="text-[#D4A843]" />
+                        <span>Share Card</span>
+                      </button>
+                      
+                      <button 
+                        onClick={() => {
+                          const exactBook = todayVerse.ref.split(" ")[0].toLowerCase();
+                          setCurrentBook(exactBook);
+                          goTo("read");
+                        }}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-white/5 border border-white/10 hover:border-[#D4A843]/30 hover:bg-white/10 active:scale-97 text-xs font-semibold text-[#EEE9E0] transition-all cursor-pointer truncate"
+                      >
+                        <BookOpen size={13} className="text-[#D4A843]" />
+                        <span>Read book</span>
+                      </button>
 
-              </motion.div>
-            )}
+                      <button 
+                        onClick={() => {
+                          goTo("ask");
+                          setTimeout(() => {
+                            useChatPromptChip(`What is the historical context of ${todayVerse.ref}, and how does it apply to us today?`);
+                          }, 200);
+                        }}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/30 text-[#D4A843] hover:bg-[#D4A843]/20 active:scale-97 text-xs font-bold transition-all cursor-pointer truncate"
+                      >
+                        <MessageSquare size={13} />
+                        <span>Ask AI</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Daily Reflection Section */}
+                  <div className="p-6 rounded-[28px] glass-premium space-y-3 border border-white/[0.02]">
+                    <div className="flex items-center gap-2 text-xs font-bold tracking-[0.2em] text-[#D4A843] uppercase">
+                      <Feather size={13} />
+                      <span>Daily Reflection</span>
+                    </div>
+                    <p className="text-[#EEE9E0]/80 font-sans text-xs leading-relaxed">
+                      {devotionInfo.reflection}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 pt-2">
+                      {devotionInfo.focus.map((tag, idx) => (
+                        <span key={idx} className="text-[9px] font-bold tracking-wider uppercase py-0.5 px-2.5 rounded-full bg-[#D4A843]/15 border border-[#D4A843]/30 text-[#D4A843]">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Breath Prayer Sanctuary */}
+                  <div className="p-6 rounded-[28px] bg-gradient-to-br from-[#1A1105] to-[#0A0D14] border border-[#D4A843]/15 space-y-3.5 shadow-xl relative overflow-hidden">
+                    <div className="absolute top-[-30px] right-[-30px] w-24 h-24 bg-[#D4A843]/5 rounded-full blur-2xl pointer-events-none" />
+                    
+                    <div className="flex items-center gap-2 text-xs font-bold tracking-[0.2em] text-[#D4A843] uppercase">
+                      <Heart size={13} className="fill-[#D4A843]/10 text-[#D4A843]" />
+                      <span>Today's Breath Prayer</span>
+                    </div>
+                    
+                    <p className="font-serif italic text-xs text-[#EEE9E0]/90 leading-relaxed pl-3 border-l-[3px] border-[#D4A843]/40">
+                      "{devotionInfo.prayer}"
+                    </p>
+
+                    <button
+                      onClick={() => handleSaveDailyPrayerToJournal(devotionInfo.prayer)}
+                      className="w-full py-2.5 px-4 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/25 text-[#D4A843] hover:bg-[#D4A843]/20 hover:border-[#D4A843]/40 active:scale-98 text-xs font-bold font-sans flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm mt-1"
+                    >
+                      <Heart size={12} className="fill-[#D4A843] text-[#D4A843]" />
+                      <span>Save Prayer to Journal</span>
+                    </button>
+                  </div>
+
+                  {/* Dashboard grid quick routes */}
+                  <div>
+                    <h3 className="text-[10px] uppercase tracking-[0.2em] text-[#EEE9E0]/40 font-bold mb-3 pl-1">Quick Navigation</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      
+                      <div 
+                        onClick={() => goTo("ask")}
+                        className="p-5 rounded-[24px] glass-premium-interact cursor-pointer flex flex-col justify-between"
+                      >
+                        <div className="w-12 h-12 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/20 flex items-center justify-center text-[#D4A843] mb-4">
+                          <MessageSquare size={20} />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-semibold text-white mb-0.5">Ask the Bible</h4>
+                          <p className="text-[10px] text-[#EEE9E0]/50">Answers powered by AI</p>
+                        </div>
+                      </div>
+
+                      <div 
+                        onClick={() => goTo("read")}
+                        className="p-5 rounded-[24px] glass-premium-interact cursor-pointer flex flex-col justify-between"
+                      >
+                        <div className="w-12 h-12 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/20 flex items-center justify-center text-[#D4A843] mb-4">
+                          <BookOpen size={20} />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-semibold text-white mb-0.5">Read Bible</h4>
+                          <p className="text-[10px] text-[#EEE9E0]/50">All 66 full scripture books</p>
+                        </div>
+                      </div>
+
+                      <div 
+                        onClick={() => goTo("pray")}
+                        className="p-5 rounded-[24px] glass-premium-interact cursor-pointer flex flex-col justify-between"
+                      >
+                        <div className="w-12 h-12 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/20 flex items-center justify-center text-[#D4A843] mb-4">
+                          <Heart size={20} className="fill-[#D4A843] text-[#D4A843]" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-semibold text-white mb-0.5">Prayer Journal</h4>
+                          <p className="text-[10px] text-[#EEE9E0]/50">Save & celebrate prayers</p>
+                        </div>
+                      </div>
+
+                      <div 
+                        onClick={() => goTo("leaderboard")}
+                        className="p-5 rounded-[24px] glass-premium-interact cursor-pointer flex flex-col justify-between"
+                      >
+                        <div className="w-12 h-12 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/20 flex items-center justify-center text-[#D4A843] mb-4">
+                          <Trophy size={20} />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-semibold text-white mb-0.5">Leaderboard</h4>
+                          <p className="text-[10px] text-[#EEE9E0]/50">Global believers rank</p>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                </motion.div>
+              );
+            })()}
 
             {/* 3. BIBLE CHAPTER READER */}
             {currentScreen === "read" && (
@@ -2669,9 +2726,9 @@ The Greek word used for love in Romans is *agape* — representing a covenantal,
 
                   <div className="p-5 rounded-[24px] glass-premium text-center relative group">
                     <span className="font-serif text-3xl font-bold text-[#D4A843]">
-                      {readingPlans.filter(p => p.started).length}
+                      {savedVerses.length}
                     </span>
-                    <p className="text-[10px] text-[#EEE9E0]/45 uppercase font-bold tracking-wider mt-1.5">Active Plans</p>
+                    <p className="text-[10px] text-[#EEE9E0]/45 uppercase font-bold tracking-wider mt-1.5">Bookmarked</p>
                   </div>
                 </div>
 
@@ -2805,13 +2862,22 @@ The Greek word used for love in Romans is *agape* — representing a covenantal,
                           <Bell size={14} className="text-[#D4A843]" />
                           Notification Status
                         </span>
-                        <span className={`text-[10px] font-bold uppercase py-1 px-2.5 rounded-full ${notificationPermission === "granted" ? "bg-teal-500/20 text-teal-400 border border-teal-500/30" : notificationPermission === "denied" ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-amber-500/20 text-amber-400 border border-amber-500/30"}`}>
-                          {notificationPermission === "granted" ? "Active" : notificationPermission === "denied" ? "Blocked" : "Pending"}
+                        <span className={`text-[10px] font-bold uppercase py-1 px-2.5 rounded-full ${
+                          (notificationPermission === "granted" || (isTelegramEnvironment && (reminders.morning?.enabled || reminders.streak?.enabled))) 
+                            ? "bg-teal-500/20 text-teal-400 border border-teal-500/30" 
+                            : notificationPermission === "denied" 
+                              ? "bg-red-500/20 text-red-400 border border-red-500/30" 
+                              : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                        }`}>
+                          {(notificationPermission === "granted" || (isTelegramEnvironment && (reminders.morning?.enabled || reminders.streak?.enabled))) ? "Active" : notificationPermission === "denied" ? "Blocked" : "Pending"}
                         </span>
                       </div>
                       
                       <p className="text-[10px] text-[#EEE9E0]/50 leading-relaxed text-left">
-                        To receive timely morning or streak protection alerts on time even when the app is running in the background, authorize Web Push notifications.
+                        {isTelegramEnvironment 
+                          ? "Morning or streak protection alerts will be sent directly to your Telegram Direct Messages via our bot. Ensure you have started a chat with our bot."
+                          : "To receive timely morning or streak protection alerts on time even when the app is running in the background, authorize Web Push notifications."
+                        }
                       </p>
 
                       <div className="grid grid-cols-2 gap-3 pt-1">
