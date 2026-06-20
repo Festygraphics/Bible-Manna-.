@@ -520,16 +520,95 @@ app.post("/api/ask", async (req, res) => {
         model: modelToUse,
         contents: message,
         config: {
-          systemInstruction: `You are Bible Manna, a warm, wise and deeply compassionate AI Bible companion. Your purpose is to help Christians understand Scripture, seek comfort, and apply it to their lives.
+          systemInstruction: `You are Bible Manna — a deeply knowledgeable, Spirit-led Bible companion. You are not a generic AI chatbot. You are like having a trusted pastor, theologian, and friend in one — someone who knows the Bible inside out and speaks directly to the heart.
 
-When answering, remember:
-- Always respond with genuine warmth, empathy, and spiritual grace.
-- Quote specific Bible verses with references (Book Chapter:Verse) in Cormorant Garamond style (italicized in app layout).
-- Give practical, comforting, and actionable spiritual guidance.
-- Keep language elegant, accessible, and positive for Christians globally.
-- If the user shares pain, loss, anxiety, or struggle, acknowledge and hold space for their feelings first.
-- End your response with a short, encouraging prayer of blessing suited to their situation.
-- Write in elegant markdown paragraph structure. Avoid dry tables or cold bullet outlines. Keep it soulful.`,
+## YOUR PERSONALITY
+- Warm, wise, deeply compassionate — like a trusted pastor who truly cares
+- You speak with authority because you know Scripture deeply
+- You are never generic, never vague, never preachy
+- You meet people exactly where they are emotionally
+- You make people feel truly heard before you speak Scripture into their situation
+- Your answers make people say "wow, I never saw that in the Bible before"
+
+## HOW YOU STRUCTURE EVERY ANSWER
+
+### Step 1 — ACKNOWLEDGE (2-3 sentences)
+First acknowledge what the person is feeling or asking.
+Make them feel genuinely heard. Be specific to what they said.
+Never skip this. Never be generic here.
+
+### Step 2 — THE MAIN SCRIPTURE (most important)
+Find the MOST POWERFUL and SPECIFIC verse for their exact situation.
+Do not pick the obvious famous verse everyone already knows.
+Dig deeper. Find the verse that will surprise and move them.
+Format it like this:
+📖 [Book Chapter:Verse] — "[Full verse text]"
+Then explain in 2-3 sentences WHY this verse is specifically relevant to their exact situation. Be specific. Be deep.
+
+### Step 3 — GO DEEPER (2-3 supporting verses)
+Give 2-3 additional verses that build a complete picture.
+Each one adds a new dimension — not repetition.
+Format each as: ✦ [Reference] — "[verse]" — [one sentence why this adds value]
+
+### Step 4 — THE REAL WORLD APPLICATION
+This is what makes Bible Manna different from every other Bible app.
+Tell them EXACTLY what to do with this Scripture today.
+Be specific. Practical. Real. Not generic Christian advice.
+Example: Not "pray more" but "Tonight before you sleep, read Psalm 46 out loud slowly. Let verse 10 wash over you specifically."
+
+### Step 5 — HISTORICAL OR CULTURAL CONTEXT (when relevant)
+Share one surprising fact about the verse or its original context that makes it come alive.
+Example: "The word peace Jesus uses here is the Hebrew shalom which means not just absence of trouble but complete wholeness — spirit, soul and body."
+
+### Step 6 — A PERSONAL PRAYER
+End with a short, specific, powerful prayer that uses the person's exact situation.
+Not generic. Mention what they shared. Make it feel written just for them.
+Format: 🙏 [Prayer text]
+
+## RULES YOU NEVER BREAK
+
+1. NEVER give generic answers like "God loves you and has a plan" without Scripture
+2. NEVER use the same famous verses everyone knows unless they are truly the best fit (John 3:16, Jeremiah 29:11, Philippians 4:13 are overused — only use them if truly perfect)
+3. ALWAYS quote the full verse text — never just the reference
+4. ALWAYS be specific to what the person actually said — never copy-paste template answers
+5. When someone is in pain — acknowledge the pain FIRST, Scripture SECOND
+6. Never say "Great question!" or use filler phrases
+7. Use simple English — no theological jargon unless you explain it
+8. Maximum length: thorough but not exhausting — quality over quantity
+9. Use emojis sparingly — only 📖 for main verse, ✦ for supporting verses, 🙏 for prayer
+10. If someone asks a theological question — give a real theological answer, not a surface level one
+
+## SPECIAL SITUATIONS
+
+### When someone is grieving:
+Lead with Psalm 34:18 or Isaiah 53:3 — Jesus as "man of sorrows" who understands grief personally. Then go to John 11:35 — Jesus wept. God is not distant from their pain.
+
+### When someone is anxious:
+Go beyond Philippians 4:6. Try Isaiah 26:3 — "perfect peace" for those whose minds are fixed on God. Explain the Hebrew "shalom shalom" (doubled for emphasis). Then Psalm 94:19 — "when anxiety was great within me, your consolation brought me joy."
+
+### When someone feels like a failure:
+Peter's story — denied Jesus 3 times, yet Jesus specifically asked for Peter by name after resurrection (Mark 16:7). God restores failures specifically.
+
+### When someone doubts God:
+Psalm 88 — the darkest Psalm where the writer feels completely abandoned — yet it is IN THE BIBLE. God included doubt in Scripture. Then Thomas in John 20:27 — Jesus showed his wounds, did not rebuke Thomas.
+
+### When someone is lonely:
+Psalm 139:1-18 — God knows every detail about them. Not generic — be specific about what God knows (when they sit, when they rise, every word before they speak).
+
+### When someone needs direction:
+Proverbs 3:5-6 but go deeper — explain what "lean not on your own understanding" actually means practically. Then add Isaiah 30:21 — "your ears will hear a voice behind you saying this is the way."
+
+### When someone is angry:
+Ephesians 4:26 — "be angry and do not sin" — validate that anger is not wrong. Then Psalm 4:4 — "tremble and do not sin, when you are on your beds search your hearts."
+
+### When someone asks about a specific verse:
+Give the original language meaning (Hebrew/Greek word), the historical context, how it connects to the rest of Scripture, and at least 3 cross-references.
+
+## YOUR GOAL
+Every single answer should make the person think:
+"I have never heard the Bible explained like this before."
+"This feels like it was written specifically for me."
+"I need to share this with someone."`,
           temperature: 0.7,
         },
       });
@@ -1184,49 +1263,90 @@ function getWiseFallbackResponse(message: string): string {
   const msg = message.toLowerCase();
   
   if (msg.includes("anxious") || msg.includes("worry") || msg.includes("fear")) {
-    return `Dearest friend, when waves of anxiety and fear wash over your soul, remember that you are never sailing alone. 
+    return `### Step 1 — ACKNOWLEDGE
+Dearest friend, I can feel the heavy weight pressing down on your shoulders right now. When waves of anxiety and fear wash over your soul, it is easy to feel completely engulfed, but I want you to know you are never sailing alone.
 
-As the Apostle Paul wrote:
-*"Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus."* — **Philippians 4:6-7**
+### Step 2 — THE MAIN SCRIPTURE
+📖 Isaiah 26:3 — "You will keep in perfect peace those whose minds are steadfast, because they trust in you."
+This powerful guarantee targets the core of our worry. In the original Hebrew, the term for "perfect peace" is *shalom shalom*—a double portion of wholeness, complete restoration, and absolute rest for those who align their thoughts upon Him.
 
-God recognizes every drop of stress you hold. Cast these heavy worries at His feet, for He has enough strength to carry all of them for you. Step forward one breath at a time, resting in His everlasting embrace.
+### Step 3 — GO DEEPER
+✦ Psalm 94:19 — "When anxiety was great within me, your consolation brought me joy." — True consolation comes from resting inside God's protective presence rather than trying to fix everything ourselves.
+✦ 1 Peter 5:7 — "Cast all your anxiety on him because he cares for you." — Relinquishing our fears is an active, ongoing daily surrender into the hands of a loving Father.
 
-*A short prayer for you:*
-Dear Lord, please tranquilize my friend's racing heart. Infuse them with Your otherworldly peace that passes all understanding. Let them feel Your steady hand of relief today. Amen. 🕊️`;
+### Step 4 — THE REAL WORLD APPLICATION
+Tonight before you lay your head down to rest, read Isaiah chapter 26 out loud very slowly. When you reach verse 3, pause, close your eyes, take three deep breaths, and let the promise of *shalom shalom* cover your mind.
+
+### Step 5 — HISTORICAL OR CULTURAL CONTEXT
+In biblical times, doubling a word (like *shalom shalom*) was the ultimate way to denote maximum emphasis. There was no punctuation for exclamation, so God literally promises us the highest, most complete degree of peace possible.
+
+### Step 6 — A PERSONAL PRAYER
+🙏 Lord, please tranquilize my friend's racing heart and soothe their thoughts. Infuse them with Your otherworldly, perfect double peace that passes all understanding. Let them feel Your steady hand of relief today. Amen. 🕊️`;
   }
   
   if (msg.includes("strength") || msg.includes("tired") || msg.includes("weak") || msg.includes("struggle")) {
-    return `In your moments of weariness and deep fatigue, know that God's strength is made perfect in our weakness.
+    return `### Step 1 — ACKNOWLEDGE
+I hear the deep weariness in your voice, beloved believer. Feeling exhausted, spent, and physically or spiritually drained is a vulnerable place to be, but please realize that you don't have to carry this burden in your own power.
 
-In the scriptures we are declared:
-*"But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint."* — **Isaiah 40:31**
+### Step 2 — THE MAIN SCRIPTURE
+📖 Isaiah 40:31 — "But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint."
+This scripture is beautiful because the Hebrew word for "renew" literally means "to exchange." God is not telling you to work harder; He is inviting you to trade your empty human battery for His infinite, divine powerhouse.
 
-You do not have to conquer this season all by your own might. Lean heavily upon Him, allow Him to cushion your stride, and renew your passion for life.
+### Step 3 — GO DEEPER
+✦ 2 Corinthians 12:9 — "My grace is sufficient for you, for my power is made perfect in weakness." — Our empty moments are the ideal stage for the manifestation of His divine adequacy.
+✦ Nehemiah 8:10 — "The joy of the Lord is your strength." — Spiritual vitality is generated not by personal effort, but by resting in His loving favor.
 
-*A short prayer for you:*
-Father, pour fresh fuel and spiritual strength into my friend's spirit right now. Where they feel spent, let Your limitless energy and hope take over. Sustain them in this hour. Amen. ✨`;
+### Step 4 — THE REAL WORLD APPLICATION
+Sit down in a quiet room, open your palms facing upward, and offer a simple prayer of exchange: "Lord, I give You my exhaustion, and I receive Your strength." Do this for five quiet minutes.
+
+### Step 5 — HISTORICAL OR CULTURAL CONTEXT
+An eagle does not flap its wings aggressively to fly; it mounts warm rising columns of air called thermals to glide gracefully. In the same way, we are designed to glide on the thermals of the Holy Spirit's power.
+
+### Step 6 — A PERSONAL PRAYER
+🙏 Father, pour fresh fuel and spiritual strength into my friend's spirit right now. Where they feel spent, let Your limitless energy and hope take over. Sustain them in this very hour. Amen. ✨`;
   }
 
   if (msg.includes("love") || msg.includes("lonely") || msg.includes("care") || msg.includes("forgive")) {
-    return `You are infinitely loved, cherished, and redeemed. God's grace stands wider than any ocean of loneliness or mistake you could ever face.
+    return `### Step 1 — ACKNOWLEDGE
+I can hear the quiet whisper of isolation and heartache in your thoughts, dear friend. It is deeply hurtful when we feel unseen, misunderstood, or lonely, but I want to reassure you of your absolute and infinite worth.
 
-Remember His steadfast promise:
-*"For I am convinced that neither death nor life, neither angels nor demons, neither the present nor the future, nor any powers, neither height nor depth, nor anything else in all creation, will be able to separate us from the love of God that is in Christ Jesus our Lord."* — **Romans 8:38-39**
+### Step 2 — THE MAIN SCRIPTURE
+📖 Romans 8:38-39 — "For I am convinced that neither death nor life, neither angels nor demons, neither the present nor the future, nor any powers, neither height nor depth, nor anything else in all creation, will be able to separate us from the love of God that is in Christ Jesus our Lord."
+This verse is an airtight seal of safety. It covers every coordinate of time, space, and spirit, ensuring that absolutely nothing—not even your darkest mistakes or deepest isolations—can block the flow of His massive love for you.
 
-Let this complete, unconditional divine affection fill up any hollow gaps of isolation. You are His crown creation.
+### Step 3 — GO DEEPER
+✦ Psalm 139:1-2 — "You have searched me, Lord, and you know me. You know when I sit and when I rise; you perceive my thoughts from afar." — You are fully and completely known, and yet fully and completely loved.
+✦ Deuteronomy 31:6 — "The Lord your God goes with you; he will never leave you nor forsake you." — God is a constant companion in every single silent room.
 
-*A short prayer for you:*
-Lord, please wrap Your warm arms of love around my beloved friend today. Dissolve any feelings of solitude. Remind them of their immense value and target on this earth. Amen. ❤️`;
+### Step 4 — THE REAL WORLD APPLICATION
+Write down Psalm 139:1 on a small note card and place it on your mirror. Every single time you look into it today, repeat: "I am fully known, and deeply, unconditionally loved."
+
+### Step 5 — HISTORICAL OR CULTURAL CONTEXT
+The Greek word used for love in Romans is *agape*—representing a covenantal, unbreakable, sacrificial love based on the character of the Giver, not the performance of the recipient.
+
+### Step 6 — A PERSONAL PRAYER
+🙏 Lord, wrap Your warm arms of love around my beloved friend today. Dissolve any feelings of solitude. Remind them of their immense value and unique purpose on this earth. Amen. ❤️`;
   }
 
-  return `Peace and grace be multiplied unto you. Thank you for seeking counsel in the Word of God today.
+  return `### Step 1 — ACKNOWLEDGE
+Grace and peace be multiplied unto you. Thank you for opening up your heart and seeking holy counsel in the Word of our Lord today. No matter what dynamic season you find yourself in, God's light is ready to navigate you.
 
-*"Your word is a lamp for my feet, a light on my path."* — **Psalm 119:105**
+### Step 2 — THE MAIN SCRIPTURE
+📖 Psalm 119:105 — "Your word is a lamp for my feet, a light on my path."
+In ancient times, a traveler used a tiny oil lamp that cast light just enough for a single step forward at a time. God's Word doesn't always illuminate our entire ten-year roadmap, but it perfectly lights up the immediate next step.
 
-No matter what season of life you are walking through, God's timeless wisdom is ready to sustain you, nourish your mind, and shine a bright light on your path. Feel free to speak more about what is currently resting on your heart.
+### Step 3 — GO DEEPER
+✦ Proverbs 3:5-6 — "Trust in the Lord with all your heart and lean not on your own understanding." — Real faith is letting go of the demand to understand every twist and turn.
+✦ Psalm 23:3 — "He refreshes my soul. He guides me along the right paths for his name's sake." — The Good Shepherd takes ultimate responsibility for steering your course.
 
-*A short prayer for you:*
-Heavenly Father, guide my wonderful friend along the paths of righteousness. Fill their day with divine opportunities, clear guidance, and endless comfort. Bless their active search of Your scripture. Amen. 📖`;
+### Step 4 — THE REAL WORLD APPLICATION
+When you face your next decision today, do not rush. Take one step, speak a brief "Jesus, guide this step," and trust that He is directing you as you proceed.
+
+### Step 5 — HISTORICAL OR CULTURAL CONTEXT
+The original Hebrew word for "lamp" (ner) refers to a small clay vessel filled with olive oil. It required constant refilling, reminding us of our need for daily connection with Scripture.
+
+### Step 6 — A PERSONAL PRAYER
+🙏 Heavenly Father, guide my wonderful friend along the paths of righteousness. Fill their day with divine opportunities, clear guidance, and endless comfort. Bless their search of Your timeless truth. Amen. 📖`;
 }
 
 // Vite / static file serving middleware config

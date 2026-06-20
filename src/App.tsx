@@ -899,15 +899,87 @@ export default function App() {
       }
     } catch (e) {
       showToast("Connection difficulty or missing API key. Serving fallback reflections.");
-      let fallbackText = "Dearest friend, thank you for seeking counsel in the Word of God today.\n\n*\"Your word is a lamp for my feet, a light on my path.\"* — **Psalm 119:105**\n\nNo matter what season of life you are walking through, God's timeless wisdom is ready to sustain you. Feel free to speak more about what is currently resting on your heart.\n\n*A short prayer for you:*\nValue the spiritual guidance: Heavenly Father, guide my wonderful friend along the paths of righteousness. Fill their day with divine opportunities, clear guidance, and endless comfort. Amen. 📖";
+      let fallbackText = `### Step 1 — ACKNOWLEDGE
+Grace and peace be multiplied unto you. Thank you for seek counsel in the Word of our Lord today. No matter what dynamic season you find yourself in, God's light is ready to navigate you.
+
+### Step 2 — THE MAIN SCRIPTURE
+📖 Psalm 119:105 — "Your word is a lamp for my feet, a light on my path."
+In ancient times, a traveler used a tiny oil lamp that cast light just enough for a single step forward at a time. God's Word doesn't always illuminate our entire ten-year roadmap, but it perfectly lights up the immediate next step.
+
+### Step 3 — GO DEEPER
+✦ Proverbs 3:5-6 — "Trust in the Lord with all your heart and lean not on your own understanding." — Real faith is letting go of the demand to understand every twist and turn.
+✦ Psalm 23:3 — "He refreshes my soul. He guides me along the right paths for his name's sake." — The Good Shepherd takes ultimate responsibility for steering your course.
+
+### Step 4 — THE REAL WORLD APPLICATION
+When you face your next decision today, do not rush. Take one step, speak a brief "Jesus, guide this step," and trust that He is directing you as you proceed.
+
+### Step 5 — HISTORICAL OR CULTURAL CONTEXT
+The original Hebrew word for "lamp" (ner) refers to a small clay vessel filled with olive oil. It required constant refilling, reminding us of our need for daily connection with Scripture.
+
+### Step 6 — A PERSONAL PRAYER
+🙏 Heavenly Father, guide my wonderful friend along the paths of righteousness. Fill their day with divine opportunities, clear guidance, and endless comfort. Bless their active search of Your scripture. Amen. 📖`;
       
       const lower = promptText.toLowerCase();
       if (lower.includes("anxious") || lower.includes("worry") || lower.includes("fear")) {
-        fallbackText = "Dearest friend, when waves of anxiety and fear wash over your soul, remember that you are never sailing alone.\n\nAs the Apostle Paul wrote:\n*\"Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.\"* — **Philippians 4:6-7**\n\nGod recognizes every drop of stress you hold. Cast these heavy worries at His feet, for He has enough strength to carry all of them for you.\n\n*A short prayer for you:*\nDear Lord, please tranquilize my friend's racing heart. Infuse them with Your otherworldly peace that passes all understanding. Amen. 🕊️";
+        fallbackText = `### Step 1 — ACKNOWLEDGE
+Dearest friend, I can feel the heavy weight pressing down on your shoulders right now. When waves of anxiety and fear wash over your soul, it is easy to feel completely engulfed, but I want you to know you are never sailing alone.
+
+### Step 2 — THE MAIN SCRIPTURE
+📖 Isaiah 26:3 — "You will keep in perfect peace those whose minds are steadfast, because they trust in you."
+This powerful guarantee targets the core of our worry. In the original Hebrew, the term for "perfect peace" is *shalom shalom*—a double portion of wholeness, complete restoration, and absolute rest for those who align their thoughts upon Him.
+
+### Step 3 — GO DEEPER
+✦ Psalm 94:19 — "When anxiety was great within me, your consolation brought me joy." — True consolation comes from resting inside God's protective presence rather than trying to fix everything ourselves.
+✦ 1 Peter 5:7 — "Cast all your anxiety on him because he cares for you." — Relinquishing our fears is an active, ongoing daily surrender into the hands of a loving Father.
+
+### Step 4 — THE REAL WORLD APPLICATION
+Tonight before you lay your head down to rest, read Isaiah chapter 26 out loud very slowly. When you reach verse 3, pause, close your eyes, take three deep breaths, and let the promise of *shalom shalom* cover your mind.
+
+### Step 5 — HISTORICAL OR CULTURAL CONTEXT
+In biblical times, doubling a word (like *shalom shalom*) was the ultimate way to denote maximum emphasis. There was no punctuation for exclamation, so God literally promises us the highest, most complete degree of peace possible.
+
+### Step 6 — A PERSONAL PRAYER
+🙏 Lord, please tranquilize my friend's racing heart. Infuse them with Your otherworldly peace that passes all understanding. Amen. 🕊️`;
       } else if (lower.includes("strength") || lower.includes("tired") || lower.includes("weak") || lower.includes("struggle")) {
-        fallbackText = "In your moments of weariness and deep fatigue, know that God's strength is made perfect in our weakness.\n\nIn the scriptures we are declared:\n*\"But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint.\"* — **Isaiah 40:31**\n\nYou do not have to conquer this season all by your own might. Lean heavily upon Him, allow Him to cushion your stride, and renew your passion for life.\n\n*A short prayer for you:*\nFather, pour fresh fuel and spiritual strength into my friend's spirit right now. Where they feel spent, let Your limitless energy and hope take over. Amen. ✨";
+        fallbackText = `### Step 1 — ACKNOWLEDGE
+I hear the deep weariness in your voice, beloved believer. Feeling exhausted, spent, and physically or spiritually drained is a vulnerable place to be, but please realize that you don't have to carry this burden in your own power.
+
+### Step 2 — THE MAIN SCRIPTURE
+📖 Isaiah 40:31 — "But those who hope in the Lord will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint."
+This scripture is beautiful because the Hebrew word for "renew" literally means "to exchange." God is not telling you to work harder; He is inviting you to trade your empty human battery for His infinite, divine powerhouse.
+
+### Step 3 — GO DEEPER
+✦ 2 Corinthians 12:9 — "My grace is sufficient for you, for my power is made perfect in weakness." — Our empty moments are the ideal stage for the manifestation of His divine adequacy.
+✦ Nehemiah 8:10 — "The joy of the Lord is your strength." — Spiritual vitality is generated not by personal effort, but by resting in His loving favor.
+
+### Step 4 — THE REAL WORLD APPLICATION
+Sit down in a quiet room, open your palms facing upward, and offer a simple prayer of exchange: "Lord, I give You my exhaustion, and I receive Your strength." Do this for five quiet minutes.
+
+### Step 5 — HISTORICAL OR CULTURAL CONTEXT
+An eagle does not flap its wings aggressively to fly; it mounts warm rising columns of air called thermals to glide gracefully. In the same way, we are designed to glide on the thermals of the Holy Spirit's power.
+
+### Step 6 — A PERSONAL PRAYER
+🙏 Father, pour fresh fuel and spiritual strength into my friend's spirit right now. Where they feel spent, let Your limitless energy and hope take over. Amen. ✨`;
       } else if (lower.includes("love") || lower.includes("lonely") || lower.includes("care") || lower.includes("forgive")) {
-        fallbackText = "You are infinitely loved, cherished, and redeemed. God's grace stands wider than any ocean of loneliness or mistake you could ever face.\n\nRemember His steadfast promise:\n*\"For I am convinced that neither death nor life, neither angels nor demons, neither the present nor the future, nor any powers, neither height nor depth, nor anything else in all creation, will be able to separate us from the love of God that is in Christ Jesus our Lord.\"* — **Romans 8:38-39**\n\nLet this complete, unconditional divine affection fill up any hollow gaps of isolation.\n\n*A short prayer for you:*\nLord, wrap Your warm arms of love around my beloved friend today. Dissolve any feelings of solitude. Amen. ❤️";
+        fallbackText = `### Step 1 — ACKNOWLEDGE
+I can hear the quiet whisper of isolation and heartache in your thoughts, dear friend. It is deeply hurtful when we feel unseen, misunderstood, or lonely, but I want to reassure you of your absolute and infinite worth.
+
+### Step 2 — THE MAIN SCRIPTURE
+📖 Romans 8:38-39 — "For I am convinced that neither death nor life, neither angels nor demons, neither the present nor the future, nor any powers, neither height nor depth, nor anything else in all creation, will be able to separate us from the love of God that is in Christ Jesus our Lord."
+This verse is an airtight seal of safety. It covers every coordinate of time, space, and spirit, ensuring that absolutely nothing—not even your darkest mistakes or deepest isolations—can block the flow of His massive love for you.
+
+### Step 3 — GO DEEPER
+✦ Psalm 139:1-2 — "You have searched me, Lord, and you know me. You know when I sit and when I rise; you perceive my thoughts from afar." — You are fully and completely known, and yet fully and completely loved.
+✦ Deuteronomy 31:6 — "The Lord your God goes with you; he will never leave you nor forsake you." — God is a constant companion in every single silent room.
+
+### Step 4 — THE REAL WORLD APPLICATION
+Write down Psalm 139:1 on a small note card and place it on your mirror. Every single time you look into it today, repeat: "I am fully known, and deeply, unconditionally loved."
+
+### Step 5 — HISTORICAL OR CULTURAL CONTEXT
+The Greek word used for love in Romans is *agape* — representing a covenantal, unbreakable, sacrificial love based on the character of the Giver, not the performance of the recipient.
+
+### Step 6 — A PERSONAL PRAYER
+🙏 Lord, wrap Your warm arms of love around my beloved friend today. Dissolve any feelings of solitude. Amen. ❤️`;
       }
 
       const aiResponseMsgFallback: ChatMessage = {
