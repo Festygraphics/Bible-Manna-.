@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Flame, 
@@ -4045,6 +4046,7 @@ The Greek word used for love in Romans is *agape* — representing a covenantal,
           {toastMessage}
         </div>
 
+      <Analytics />
       </div>
     </div>
   );
