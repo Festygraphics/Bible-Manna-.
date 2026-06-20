@@ -2,7 +2,6 @@ import express from "express";
 import path from "path";
 import dotenv from "dotenv";
 import crypto from "crypto";
-import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import { createClient } from "@supabase/supabase-js";
 
@@ -1233,6 +1232,7 @@ Heavenly Father, guide my wonderful friend along the paths of righteousness. Fil
 // Vite / static file serving middleware config
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
@@ -1251,4 +1251,9 @@ async function startServer() {
   });
 }
 
-startServer();
+// Only start the server if not running as a serverless function on Vercel
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;
