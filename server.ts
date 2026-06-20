@@ -1393,91 +1393,127 @@ app.post("/api/telegram-test-notification", async (req, res) => {
   }
 });
 
-// Periodic Scheduler checks every 60 seconds
+// Dynamic execute helper for periodic notification scheduler (both serverless & container environments)
+async function executeReminderCheck(): Promise<{ success: boolean; processedUsers: number; sentCount: number; errors?: string[] }> {
+  if (!supabase || !BOT_TOKEN) {
+    return { success: false, processedUsers: 0, sentCount: 0, errors: ["Supabase or Bot Token is not configured"] };
+  }
+
+  const errors: string[] = [];
+  let processedUsers = 0;
+  let sentCount = 0;
+
+  try {
+    const now = new Date();
+    // UTC Minutes from Midnight
+    const currentUTCMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+    const todayStr = now.toISOString().slice(0, 10); // "YYYY-MM-DD"
+
+    // Pull users that are valid
+    const { data: users, error } = await supabase
+      .from("users")
+      .select("telegram_id, first_name, reminders");
+
+    if (error || !users) {
+      return { success: false, processedUsers: 0, sentCount: 0, errors: [error?.message || "No users found"] };
+    }
+
+    processedUsers = users.length;
+
+    for (const user of users) {
+      if (!user.telegram_id || !user.reminders) continue;
+
+      let rems: any = null;
+      try {
+        rems = typeof user.reminders === "string" ? JSON.parse(user.reminders) : user.reminders;
+      } catch (e: any) {
+        errors.push(`Parse error for user ${user.telegram_id}: ${e.message}`);
+        continue;
+      }
+
+      if (!rems) continue;
+
+      // timezoneOffset is in minutes (local - UTC), so UTCTimeInMinutes = localTimeInMinutes + timezoneOffset
+      const tzOffset = rems.timezoneOffset !== undefined ? Number(rems.timezoneOffset) : 0;
+
+      // 1. Morning devotion reminder check
+      if (rems.morning?.enabled && rems.morning?.time) {
+        const [hour, min] = rems.morning.time.split(":").map(Number);
+        if (!isNaN(hour) && !isNaN(min)) {
+          const localMinutes = hour * 60 + min;
+          const targetUTCMinutes = (localMinutes + tzOffset + 1440) % 1440;
+
+          if (currentUTCMinutes === targetUTCMinutes) {
+            const trackingKey = `morning_${user.telegram_id}_${todayStr}`;
+            if (!notifiedReminderKeys.has(trackingKey)) {
+              notifiedReminderKeys.add(trackingKey);
+              
+              const praiseMsg = `🌅 *Your Daily Morning Devotion is Ready* 📖\n\nBlessed morning, ${user.first_name || "Believer"}! Step into His grace. A beautiful scripture and encouraging reflection are waiting for your soul today.\n\n✨ "Your word is a lamp for my feet, a light on my path." — Psalm 119:105\n\n👉 *Tap the WebApp Menu button below to read!*`;
+              const ok = await sendTelegramMessage(user.telegram_id, praiseMsg);
+              if (ok) sentCount++;
+            }
+          }
+        }
+      }
+
+      // 2. Streak protection reminder check
+      if (rems.streak?.enabled && rems.streak?.time) {
+        const [hour, min] = rems.streak.time.split(":").map(Number);
+        if (!isNaN(hour) && !isNaN(min)) {
+          const localMinutes = hour * 60 + min;
+          const targetUTCMinutes = (localMinutes + tzOffset + 1440) % 1440;
+
+          if (currentUTCMinutes === targetUTCMinutes) {
+            const trackingKey = `streak_${user.telegram_id}_${todayStr}`;
+            if (!notifiedReminderKeys.has(trackingKey)) {
+              notifiedReminderKeys.add(trackingKey);
+
+              const streakMsg = `🔥 *Manna Streak Protection Alert* 🛡️\n\nHey ${user.first_name || "Believer"}, your vertical walk is precious! Do not let your daily devotion streak fade away.\n\nTake just 2 minutes right now to check today's Scripture and keep your daily streak alive! 🙌\n\n👉 *Tap the WebApp Menu button below to continue!*`;
+              const ok = await sendTelegramMessage(user.telegram_id, streakMsg);
+              if (ok) sentCount++;
+            }
+          }
+        }
+      }
+    }
+
+    // Keep cache clean from overflowing
+    if (notifiedReminderKeys.size > 10000) {
+      notifiedReminderKeys.clear();
+    }
+
+    return { success: true, processedUsers, sentCount, errors: errors.length ? errors : undefined };
+
+  } catch (schedErr: any) {
+    console.error("[NOTIFICATION SCHEDULER EXPR ERROR]:", schedErr);
+    return { success: false, processedUsers, sentCount, errors: [schedErr.message] };
+  }
+}
+
+// REST route for serverless Cron triggers (e.g. Vercel Cron jobs)
+app.get("/api/cron/notifications", async (req, res) => {
+  const cronSecret = process.env.CRON_SECRET || process.env.TELEGRAM_WEBHOOK_SECRET;
+  const receivedSecret = req.query.secret || req.headers.authorization?.replace("Bearer ", "");
+  
+  if (cronSecret && receivedSecret !== cronSecret) {
+    res.status(401).json({ error: "Unauthorized cron execution" });
+    return;
+  }
+  
+  try {
+    const result = await executeReminderCheck();
+    res.json({ message: "Cron notification run completed", ...result });
+  } catch (err: any) {
+    console.error("[CRON WEBHOOK ROUTE ERROR]:", err);
+    res.status(500).json({ error: "Cron run failed", details: err?.message || String(err) });
+  }
+});
+
+// Periodic Scheduler checks every 60 seconds (for non-serverless container instances)
 function startNotificationScheduler() {
   console.log("[NOTIFICATION SCHEDULER] Service initialized successfully.");
   setInterval(async () => {
-    if (!supabase || !BOT_TOKEN) {
-      return;
-    }
-
-    try {
-      const now = new Date();
-      // UTC Minutes from Midnight
-      const currentUTCMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
-      const todayStr = now.toISOString().slice(0, 10); // "YYYY-MM-DD"
-
-      // Pull users that are valid
-      const { data: users, error } = await supabase
-        .from("users")
-        .select("telegram_id, first_name, reminders");
-
-      if (error || !users) {
-        return;
-      }
-
-      for (const user of users) {
-        if (!user.telegram_id || !user.reminders) continue;
-
-        let rems: any = null;
-        try {
-          rems = typeof user.reminders === "string" ? JSON.parse(user.reminders) : user.reminders;
-        } catch (e) {
-          continue;
-        }
-
-        if (!rems) continue;
-
-        // timezoneOffset is in minutes (local - UTC), so UTCTimeInMinutes = localTimeInMinutes + timezoneOffset
-        const tzOffset = rems.timezoneOffset !== undefined ? Number(rems.timezoneOffset) : 0;
-
-        // 1. Morning devotion reminder check
-        if (rems.morning?.enabled && rems.morning?.time) {
-          const [hour, min] = rems.morning.time.split(":").map(Number);
-          if (!isNaN(hour) && !isNaN(min)) {
-            const localMinutes = hour * 60 + min;
-            const targetUTCMinutes = (localMinutes + tzOffset + 1440) % 1440;
-
-            if (currentUTCMinutes === targetUTCMinutes) {
-              const trackingKey = `morning_${user.telegram_id}_${todayStr}`;
-              if (!notifiedReminderKeys.has(trackingKey)) {
-                notifiedReminderKeys.add(trackingKey);
-                
-                const praiseMsg = `🌅 *Your Daily Morning Devotion is Ready* 📖\n\nBlessed morning, ${user.first_name || "Believer"}! Step into His grace. A beautiful scripture and encouraging reflection are waiting for your soul today.\n\n✨ "Your word is a lamp for my feet, a light on my path." — Psalm 119:105\n\n👉 *Tap the WebApp Menu button below to read!*`;
-                await sendTelegramMessage(user.telegram_id, praiseMsg);
-              }
-            }
-          }
-        }
-
-        // 2. Streak protection reminder check
-        if (rems.streak?.enabled && rems.streak?.time) {
-          const [hour, min] = rems.streak.time.split(":").map(Number);
-          if (!isNaN(hour) && !isNaN(min)) {
-            const localMinutes = hour * 60 + min;
-            const targetUTCMinutes = (localMinutes + tzOffset + 1440) % 1440;
-
-            if (currentUTCMinutes === targetUTCMinutes) {
-              const trackingKey = `streak_${user.telegram_id}_${todayStr}`;
-              if (!notifiedReminderKeys.has(trackingKey)) {
-                notifiedReminderKeys.add(trackingKey);
-
-                const streakMsg = `🔥 *Manna Streak Protection Alert* 🛡️\n\nHey ${user.first_name || "Believer"}, your vertical walk is precious! Do not let your daily devotion streak fade away.\n\nTake just 2 minutes right now to check today's Scripture and keep your daily streak alive! 🙌\n\n👉 *Tap the WebApp Menu button below to continue!*`;
-                await sendTelegramMessage(user.telegram_id, streakMsg);
-              }
-            }
-          }
-        }
-      }
-
-      // Keep cache clean
-      if (notifiedReminderKeys.size > 10000) {
-        notifiedReminderKeys.clear();
-      }
-
-    } catch (schedErr) {
-      console.error("[NOTIFICATION SCHEDULER ERROR]:", schedErr);
-    }
+    await executeReminderCheck();
   }, 60000); // Poll once every 60 seconds
 }
 

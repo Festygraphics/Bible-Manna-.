@@ -1266,7 +1266,7 @@ The Greek word used for love in Romans is *agape* — representing a covenantal,
         validUntil: Math.floor(Date.now() / 1000) + 600, // Valid for 10 minutes
         messages: [
           {
-            address: "UQALg6xZbeD8_nwhC8YwK1C4v8L9Y6mYm2F_0Oas4k2F_6O8", // Target payment address
+            address: "UQALg6xZbeD8_nwhC8YwK1C4v8L9Y6mYm2F_0Oas4k", // Target payment address
             amount: "3000000000",
             payload: bocBase64Str
           }
