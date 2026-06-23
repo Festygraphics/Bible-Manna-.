@@ -13,5 +13,11 @@
       "source": "/((?!api/).*)",
       "destination": "/"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/notifications",
+      "schedule": "0 * * * *"
+    }
   ]
 }
