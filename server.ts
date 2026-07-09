@@ -1439,25 +1439,6 @@ async function executeReminderCheck(): Promise<{ success: boolean; processedUser
   }
 }
 
-// REST route for serverless Cron triggers (e.g. Vercel Cron jobs)
-app.get("/api/cron/notifications", async (req, res) => {
-  const cronSecret = process.env.CRON_SECRET || process.env.TELEGRAM_WEBHOOK_SECRET;
-  const receivedSecret = req.query.secret || req.headers.authorization?.replace("Bearer ", "");
-  
-  if (cronSecret && receivedSecret !== cronSecret) {
-    res.status(401).json({ error: "Unauthorized cron execution" });
-    return;
-  }
-  
-  try {
-    const result = await executeReminderCheck();
-    res.json({ message: "Cron notification run completed", ...result });
-  } catch (err: any) {
-    console.error("[CRON WEBHOOK ROUTE ERROR]:", err);
-    res.status(500).json({ error: "Cron run failed", details: err?.message || String(err) });
-  }
-});
-
 // Periodic Scheduler checks every 60 seconds (for non-serverless container instances)
 function startNotificationScheduler() {
   console.log("[NOTIFICATION SCHEDULER] Service initialized successfully.");
