@@ -146,36 +146,11 @@ app.get("/api/user/load", async (req, res) => {
     }
 
     // Evaluate premium status expiration date dynamically
-    let isPremiumActive = !!userData.is_premium;
-    let premiumStatus = userData.premium_status || (userData.is_premium ? "active" : "free");
-    let premiumExpiresAt = userData.premium_expires_at || null;
+    let isPremiumActive = true;
+    let premiumStatus = "active";
+    let premiumExpiresAt = null;
     const walletAddress = userData.wallet_address || null;
     const lastTransactionHash = userData.last_transaction_hash || null;
-
-    if (isPremiumActive && premiumExpiresAt) {
-      const expiryDate = new Date(premiumExpiresAt);
-      if (new Date() > expiryDate) {
-        // Premium subscription has expired. Revert automatically to Free.
-        isPremiumActive = false;
-        premiumStatus = "expired";
-        
-        // Save back to the database in background so we don't block the startup timing
-        (async () => {
-          try {
-            await safeUsersQuery(
-              (payload) => (supabase as any).from("users").update(payload).eq("telegram_id", tid),
-              {
-                is_premium: false,
-                premium_status: "expired"
-              }
-            );
-            console.log(`Auto-expired premium status for user ${tid}`);
-          } catch (err) {
-            console.error("Failed to persist premium expiration check:", err);
-          }
-        })();
-      }
-    }
 
     // 2. Fetch prayers
     const { data: prayersData, error: prayersError } = await (supabase as any)
@@ -322,12 +297,8 @@ app.post("/api/user/sync", async (req, res) => {
 
   const tid = String(telegram_id);
 
-  // If premium activation is synced, sync with our local set too
-  if (is_premium) {
-    mockPremiumUsers.add(tid);
-  } else {
-    mockPremiumUsers.delete(tid);
-  }
+  // Since the app is completely free now, we force premium to true
+  mockPremiumUsers.add(tid);
 
   // If Supabase is not connected/configured, respond gracefully so the app still functions perfectly for the end-user
   if (!supabase) {
@@ -360,9 +331,9 @@ app.post("/api/user/sync", async (req, res) => {
       photo_url: photo_url || "",
       streak_count: streak_count || 1,
       last_active: last_active || new Date().toISOString().split("T")[0],
-      is_premium: !!is_premium,
-      premium_status: premium_status !== undefined ? premium_status : (existingRow?.premium_status || 'free'),
-      premium_expires_at: premium_expires_at !== undefined ? premium_expires_at : (existingRow?.premium_expires_at || null),
+      is_premium: true,
+      premium_status: "active",
+      premium_expires_at: null,
       wallet_address: wallet_address !== undefined ? wallet_address : (existingRow?.wallet_address || null),
       last_transaction_hash: last_transaction_hash !== undefined ? last_transaction_hash : (existingRow?.last_transaction_hash || null),
       verses_read: verses_read || 0,
@@ -996,33 +967,11 @@ app.get("/api/check-premium", async (req, res) => {
     return;
   }
   const uid = String(user_id);
-  let isPremium = mockPremiumUsers.has(uid);
-
-  // Re-verify against Supabase database for premium safety
-  if (supabase) {
-    try {
-      const { data, error } = await supabase
-        .from("users")
-        .select("is_premium")
-        .eq("telegram_id", uid)
-        .maybeSingle();
-
-      if (!error && data) {
-        isPremium = !!data.is_premium;
-        if (isPremium) {
-          mockPremiumUsers.add(uid);
-        } else {
-          mockPremiumUsers.delete(uid);
-        }
-      }
-    } catch (e) {
-      // Gracefully bypass to cache on network failures
-    }
-  }
+  mockPremiumUsers.add(uid);
 
   res.json({
-    is_premium: isPremium,
-    expires_at: isPremium ? new Date(Date.now() + 30 * 86400000).toISOString() : null
+    is_premium: true,
+    expires_at: null
   });
 });
 

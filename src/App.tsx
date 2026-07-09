@@ -163,7 +163,7 @@ export default function App() {
   const [hasNotifiedTop10, setHasNotifiedTop10] = useState<Record<string, boolean>>({});
 
   // Checkout & Donation Simulator States
-  const [isPremium, setIsPremium] = useState(false);
+  const [isPremium, setIsPremium] = useState(true);
   
   // TON Connect Subscription States
   const tonConnectRef = useRef<TonConnectUI | null>(null);
@@ -322,7 +322,7 @@ export default function App() {
         lang: telegUser.language_code || "en",
         streak_count: 1,
         last_active: today,
-        is_premium: false,
+        is_premium: true,
         verses_read: 0,
         photo_url: telegUser.photo_url || undefined,
       };
@@ -331,6 +331,7 @@ export default function App() {
     } else if (cacheUserStr) {
       try {
         baseUser = JSON.parse(cacheUserStr);
+        baseUser.is_premium = true;
       } catch (e) {
         baseUser = createDefaultGuestUser();
       }
@@ -358,9 +359,9 @@ export default function App() {
             ...baseLocalUser,
             streak_count: result.user_data.streak_count || baseLocalUser.streak_count,
             last_active: result.user_data.last_active || baseLocalUser.last_active,
-            is_premium: result.user_data.is_premium !== undefined ? result.user_data.is_premium : baseLocalUser.is_premium,
-            premium_status: result.user_data.premium_status || (result.user_data.is_premium ? "active" : "free"),
-            premium_expires_at: result.user_data.premium_expires_at || null,
+            is_premium: true,
+            premium_status: "active",
+            premium_expires_at: null,
             wallet_address: result.user_data.wallet_address || null,
             last_transaction_hash: result.user_data.last_transaction_hash || null,
             verses_read: result.user_data.verses_read !== undefined ? result.user_data.verses_read : baseLocalUser.verses_read,
@@ -415,7 +416,7 @@ export default function App() {
           triggerSupabaseSync(cloudUser, result.prayers || [], result.saved_verses || [], result.chat_history || [], readingPlans, result.reminders || reminders);
         } else {
           // New user or Supabase connection unconfigured. Operate with baseLocalUser and sync down
-          const validatedLocalUser = evaluateStreakAndValidate(baseLocalUser);
+          const validatedLocalUser = evaluateStreakAndValidate({ ...baseLocalUser, is_premium: true, premium_status: "active" });
           setCurrentUser(validatedLocalUser);
           setIsPremium(validatedLocalUser.is_premium);
           setPremiumStatus(validatedLocalUser.premium_status || (validatedLocalUser.is_premium ? "active" : "free"));
@@ -624,7 +625,7 @@ export default function App() {
       lang: "en",
       streak_count: 3,
       last_active: new Date().toISOString().split("T")[0],
-      is_premium: false,
+      is_premium: true,
       verses_read: 8,
     };
   };
@@ -2478,16 +2479,8 @@ The Greek word used for love in Romans is *agape* — representing a covenantal,
                 {/* Top stats bar */}
                 <div className="flex items-center justify-between px-4 py-3 glass-premium rounded-[20px] mb-4">
                   <span className="text-xs text-[#EEE9E0]/60">
-                    Free AI Queries: <strong className="text-[#D4A843]">{isPremium ? "∞" : freeQuestionsLeft}</strong>/{currentUser?.channel_joined ? 10 : 5}
+                    AI Queries: <strong className="text-[#D4A843]">Unlimited ✦</strong>
                   </span>
-                  {!isPremium && (
-                    <button 
-                      onClick={() => goTo("premium")}
-                      className="text-xs text-[#D4A843] font-bold hover:underline transition-all"
-                    >
-                      Unlock Unlimited ✦
-                    </button>
-                  )}
                 </div>
 
                 {/* Suggestions chips folder */}
@@ -2952,22 +2945,6 @@ The Greek word used for love in Romans is *agape* — representing a covenantal,
 
                 {/* Bottom Route helpers of Profile */}
                 <div className="space-y-3.5">
-                  <div 
-                    onClick={() => goTo("premium")}
-                    className="p-5 rounded-[24px] glass-premium-interact flex items-center justify-between cursor-pointer"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 rounded-xl bg-[#D4A843]/10 text-[#D4A843]">
-                        <Unlock size={16} />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-white">Upgrade account</h4>
-                        <p className="text-[10px] text-[#EEE9E0]/50 leading-relaxed mt-0.5">Get unlimited AI with no daily gaps</p>
-                      </div>
-                    </div>
-                    <ChevronRight size={16} className="text-[#D4A843]" />
-                  </div>
-
                   <div 
                     onClick={() => goTo("donate")}
                     className="p-5 rounded-[24px] glass-premium-interact flex items-center justify-between cursor-pointer"
