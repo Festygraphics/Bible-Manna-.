@@ -46,6 +46,27 @@ if (supabaseUrl && supabaseAnonKey && supabaseUrl !== "MY_SUPABASE_URL" && !supa
   console.log("Supabase credentials not configured in env. Falling back to local persistence.");
 }
 
+// Quietly suppress connection/offline network errors from spamming the logs as critical errors
+function logSupabaseError(context: string, error: any, isWarn = false) {
+  if (!error) return;
+  const msg = error.message || String(error);
+  if (
+    msg.includes("fetch failed") || 
+    msg.includes("network") || 
+    msg.includes("Failed to fetch") || 
+    msg.includes("TypeError") ||
+    msg.includes("unreachable")
+  ) {
+    console.log(`[Supabase Connection - Using local fallback] ${context}: ${msg}`);
+  } else {
+    if (isWarn) {
+      console.warn(`${context}:`, msg);
+    } else {
+      console.error(`${context}:`, msg);
+    }
+  }
+}
+
 // In-memory data store for persistent simulation in container
 const mockPremiumUsers = new Set<string>();
 const mockRefBonus = new Map<string, number>();
@@ -131,7 +152,7 @@ app.get("/api/user/load", async (req, res) => {
       .maybeSingle();
 
     if (userError) {
-      console.warn("Supabase Fetch User warning:", userError.message);
+      logSupabaseError("Supabase Fetch User warning", userError, true);
     }
 
     if (!userData) {
@@ -146,9 +167,17 @@ app.get("/api/user/load", async (req, res) => {
     }
 
     // Evaluate premium status expiration date dynamically
-    let isPremiumActive = true;
-    let premiumStatus = "active";
-    let premiumExpiresAt = null;
+    let isPremiumActive = userData.is_premium !== undefined ? !!userData.is_premium : false;
+    let premiumStatus = userData.premium_status || "free";
+    let premiumExpiresAt = userData.premium_expires_at || null;
+
+    if (premiumExpiresAt) {
+      const expDate = new Date(premiumExpiresAt);
+      if (expDate.getTime() < Date.now()) {
+        isPremiumActive = false;
+        premiumStatus = "expired";
+      }
+    }
     const walletAddress = userData.wallet_address || null;
     const lastTransactionHash = userData.last_transaction_hash || null;
 
@@ -159,7 +188,7 @@ app.get("/api/user/load", async (req, res) => {
       .eq("telegram_id", tid);
 
     if (prayersError) {
-      console.warn("Supabase Fetch Prayers warning:", prayersError.message);
+      logSupabaseError("Supabase Fetch Prayers warning", prayersError, true);
     }
 
     // 3. Fetch saved verses
@@ -169,7 +198,7 @@ app.get("/api/user/load", async (req, res) => {
       .eq("telegram_id", tid);
 
     if (versesError) {
-      console.warn("Supabase Fetch Saved Verses warning:", versesError.message);
+      logSupabaseError("Supabase Fetch Saved Verses warning", versesError, true);
     }
 
     // 4. Fetch chat history
@@ -180,7 +209,7 @@ app.get("/api/user/load", async (req, res) => {
       .order("timestamp", { ascending: true });
 
     if (chatError) {
-      console.warn("Supabase Fetch Chat warning:", chatError.message);
+      logSupabaseError("Supabase Fetch Chat warning", chatError, true);
     }
 
     // 5. Fetch reading plans
@@ -190,7 +219,7 @@ app.get("/api/user/load", async (req, res) => {
       .eq("telegram_id", tid);
 
     if (plansError) {
-      console.warn("Supabase Fetch Reading Plans warning:", plansError.message);
+      logSupabaseError("Supabase Fetch Reading Plans warning", plansError, true);
     }
 
     // Update in-memory premium flag if loaded active
@@ -297,8 +326,11 @@ app.post("/api/user/sync", async (req, res) => {
 
   const tid = String(telegram_id);
 
-  // Since the app is completely free now, we force premium to true
-  mockPremiumUsers.add(tid);
+  if (is_premium) {
+    mockPremiumUsers.add(tid);
+  } else {
+    mockPremiumUsers.delete(tid);
+  }
 
   // If Supabase is not connected/configured, respond gracefully so the app still functions perfectly for the end-user
   if (!supabase) {
@@ -331,9 +363,9 @@ app.post("/api/user/sync", async (req, res) => {
       photo_url: photo_url || "",
       streak_count: streak_count || 1,
       last_active: last_active || new Date().toISOString().split("T")[0],
-      is_premium: true,
-      premium_status: "active",
-      premium_expires_at: null,
+      is_premium: is_premium !== undefined ? !!is_premium : (existingRow?.is_premium || false),
+      premium_status: premium_status || existingRow?.premium_status || "free",
+      premium_expires_at: premium_expires_at || existingRow?.premium_expires_at || null,
       wallet_address: wallet_address !== undefined ? wallet_address : (existingRow?.wallet_address || null),
       last_transaction_hash: last_transaction_hash !== undefined ? last_transaction_hash : (existingRow?.last_transaction_hash || null),
       verses_read: verses_read || 0,
@@ -354,7 +386,7 @@ app.post("/api/user/sync", async (req, res) => {
     );
 
     if (userError) {
-      console.error("Supabase Users upsert error:", userError.message);
+      logSupabaseError("Supabase Users upsert error", userError);
     }
 
     // 2. Sync Prayers list (replaces or upserts)
@@ -371,7 +403,7 @@ app.post("/api/user/sync", async (req, res) => {
         .from("prayers")
         .upsert(prayerRows, { onConflict: "id" });
       if (prayerError) {
-        console.error("Supabase Prayers upsert error:", prayerError.message);
+        logSupabaseError("Supabase Prayers upsert error", prayerError);
       }
     }
 
@@ -389,7 +421,7 @@ app.post("/api/user/sync", async (req, res) => {
         .from("saved_verses")
         .upsert(verseRows, { onConflict: "id" });
       if (verseError) {
-        console.error("Supabase Saved Verses upsert error:", verseError.message);
+        logSupabaseError("Supabase Saved Verses upsert error", verseError);
       }
     }
 
@@ -431,7 +463,7 @@ app.post("/api/user/sync", async (req, res) => {
       }
 
       if (chatError) {
-        console.error("Supabase Chat History upsert error:", chatError.message);
+        logSupabaseError("Supabase Chat History upsert error", chatError);
       }
     }
 
@@ -449,7 +481,7 @@ app.post("/api/user/sync", async (req, res) => {
         .from("reading_plans")
         .upsert(planRows, { onConflict: "id" });
       if (planError) {
-        console.error("Supabase Reading Plans upsert error:", planError.message);
+        logSupabaseError("Supabase Reading Plans upsert error", planError);
       }
     }
 
@@ -462,7 +494,8 @@ app.post("/api/user/sync", async (req, res) => {
 
 // Gemini Ask endpoint
 app.post("/api/ask", async (req, res) => {
-  const { message, chatHistory } = req.body;
+  const { message, chatHistory, userName } = req.body;
+  const nameToUse = userName || "Believer";
 
   if (!message || typeof message !== "string") {
     res.status(400).json({ error: "Message is required and must be a string." });
@@ -479,6 +512,26 @@ app.post("/api/ask", async (req, res) => {
     return;
   }
 
+  // Build full conversation history context for a real chat experience
+  const contents: any[] = [];
+  if (chatHistory && Array.isArray(chatHistory)) {
+    // Keep last 14 turns to avoid exceeding context window limits while providing strong multi-turn memory
+    const recentHistory = chatHistory.slice(-14);
+    for (const msg of recentHistory) {
+      const geminiRole = msg.role === "user" ? "user" : "model";
+      contents.push({
+        role: geminiRole,
+        parts: [{ text: msg.text }]
+      });
+    }
+  }
+  
+  // Add current turn
+  contents.push({
+    role: "user",
+    parts: [{ text: message }]
+  });
+
   let response: any = null;
   let lastError: any = null;
   const attempts = 3;
@@ -486,100 +539,70 @@ app.post("/api/ask", async (req, res) => {
 
   for (let i = 0; i < attempts; i++) {
     try {
-      const modelToUse = i === 0 ? "gemini-3.5-flash" : "gemini-flash-latest";
+      const modelToUse = i === 0 ? "gemini-2.5-flash" : "gemini-1.5-flash";
       response = await ai.models.generateContent({
         model: modelToUse,
-        contents: message,
+        contents: contents,
         config: {
-          systemInstruction: `You are Bible Manna — a deeply knowledgeable, Spirit-led Bible companion. You are not a generic AI chatbot. You are like having a trusted pastor, theologian, and friend in one — someone who knows the Bible inside out and speaks directly to the heart.
+          systemInstruction: `You are Bible Manna — a deeply knowledgeable, Spirit-led Bible companion. You are not a generic AI chatbot. You are like having a trusted pastor, theologian, archeologist, and friend in one — someone who knows the Bible inside out, understands ancient manuscripts, and speaks directly to the heart.
 
-## YOUR PERSONALITY
-- Warm, wise, deeply compassionate — like a trusted pastor who truly cares
-- You speak with authority because you know Scripture deeply
-- You are never generic, never vague, never preachy
-- You meet people exactly where they are emotionally
-- You make people feel truly heard before you speak Scripture into their situation
-- Your answers make people say "wow, I never saw that in the Bible before"
+## YOUR INTERACTIVE MULTI-TURN IDENTITY
+- You behave like a real-time conversational companion. Remember what the user asked previously, build upon your past answers, and don't treat every message as a standalone query.
+- Maintain an actual, progressive dialogue. If the user says "tell me more" or asks a follow-up, refer back to the scripture you just discussed rather than introducing a completely new random topic.
 
-## HOW YOU STRUCTURE EVERY ANSWER
+## THE USER'S IDENTITY
+- The user's name is **${nameToUse}**.
+- ALWAYS speak to them directly and personally. Address them warmly as **${nameToUse}**, "Blessed ${nameToUse}", "My friend ${nameToUse}", or "Dearest ${nameToUse}" in your greetings, prayers, or natural moments of the chat. This makes the experience feel profoundly real, custom, and intimate.
+
+## YOUR ANCIENT KNOWLEDGE & ARCHEOLOGICAL DISCOVERIES
+- You are a master of biblical archaeology, ancient languages, and historical discoveries. Whenever the user asks about the history, reliability, or origins of the Bible, or whenever a verse can be enriched by physical history, you MUST share profound details from real ancient discoveries.
+- Bring forth fascinating historical facts such as:
+  - **The Dead Sea Scrolls** (found in 1947 in Qumran, proving the spectacular accuracy of the Hebrew text over 2,000 years, especially the Great Isaiah Scroll).
+  - **The Tel Dan Stele** (the 9th-century BC stone containing the earliest extra-biblical inscription mentioning the "House of David").
+  - **The Ketef Hinnom Silver Scrolls** (the oldest surviving fragments of biblical text in the world, dating to the 7th century BC, containing the Priestly Blessing of Numbers 6:24-26).
+  - **The Cyrus Cylinder** (clay cylinder confirming the precise decree of King Cyrus of Persia allowing exiled Jews to return and build their Temple, matching Ezra 1).
+  - **The Siloam Tunnel Inscription** (Hezekiah's water channel carving under Jerusalem confirming the defense preparations of 2 Kings 20).
+  - **The Lachish Letters** (clay ostraca describing the final military fire-signals during the Babylonian siege of Jerusalem, matching Jeremiah 34:7).
+  - **The Mesha Stele (Moabite Stone)** (providing ancient royal records confirming Moab's rebellion described in 2 Kings 3).
+  - **Linguistic and Greek/Hebrew etymology** (explain Greek words like *charis* [grace], *teleo* [it is finished], or Hebrew words like *hesed* [steadfast covenant love] or *shalom* [wholeness and absolute safety]).
+- If asked "is the Bible historically accurate?" or "give me archaeological evidence," write a stunning, detailed defense using these actual physical relics and discoveries.
+
+## HOW YOU STRUCTURE AN INITIAL OR DEEP SPIRITUAL RESPONSE
+When the user shares a personal issue, question, or struggles with life, structure your answer with these clear, elegant sections. If it is a casual, quick chat follow-up, you can speak more dynamically and conversationally like a normal chat.
 
 ### Step 1 — ACKNOWLEDGE (2-3 sentences)
-First acknowledge what the person is feeling or asking.
-Make them feel genuinely heard. Be specific to what they said.
-Never skip this. Never be generic here.
+First acknowledge what ${nameToUse} is feeling or asking. Make them feel genuinely heard and appreciated. Be highly personalized to what they shared.
 
 ### Step 2 — THE MAIN SCRIPTURE (most important)
-Find the MOST POWERFUL and SPECIFIC verse for their exact situation.
-Do not pick the obvious famous verse everyone already knows.
-Dig deeper. Find the verse that will surprise and move them.
+Find the MOST POWERFUL and SPECIFIC verse for their exact situation. Avoid the over-quoted ones unless perfect; dig deep.
 Format it like this:
 📖 [Book Chapter:Verse] — "[Full verse text]"
-Then explain in 2-3 sentences WHY this verse is specifically relevant to their exact situation. Be specific. Be deep.
+Then explain why this verse is specifically relevant to them in 2-3 sentences.
 
 ### Step 3 — GO DEEPER (2-3 supporting verses)
-Give 2-3 additional verses that build a complete picture.
-Each one adds a new dimension — not repetition.
+Give 2-3 additional verses that build a complete, beautiful picture.
 Format each as: ✦ [Reference] — "[verse]" — [one sentence why this adds value]
 
 ### Step 4 — THE REAL WORLD APPLICATION
-This is what makes Bible Manna different from every other Bible app.
-Tell them EXACTLY what to do with this Scripture today.
-Be specific. Practical. Real. Not generic Christian advice.
-Example: Not "pray more" but "Tonight before you sleep, read Psalm 46 out loud slowly. Let verse 10 wash over you specifically."
+Give ${nameToUse} a highly practical, actionable thing they can do with this scripture today.
 
-### Step 5 — HISTORICAL OR CULTURAL CONTEXT (when relevant)
-Share one surprising fact about the verse or its original context that makes it come alive.
-Example: "The word peace Jesus uses here is the Hebrew shalom which means not just absence of trouble but complete wholeness — spirit, soul and body."
+### Step 5 — HISTORICAL OR CULTURAL CONTEXT & ANCIENT DISCOVERIES
+Share a surprising, mind-blowing historical, linguistic, or archaeological fact about the scripture, ancient world, or manuscripts that makes it come alive. Keep it extremely interesting!
 
-### Step 6 — A PERSONAL PRAYER
-End with a short, specific, powerful prayer that uses the person's exact situation.
-Not generic. Mention what they shared. Make it feel written just for them.
-Format: 🙏 [Prayer text]
+### Step 6 — A PERSONAL PRAYER FOR ${nameToUse}
+End with a short, specific, powerful prayer tailored directly to their situation.
+Format: 🙏 [Prayer text mentioning ${nameToUse} by name]
 
 ## RULES YOU NEVER BREAK
-
-1. NEVER give generic answers like "God loves you and has a plan" without Scripture
-2. NEVER use the same famous verses everyone knows unless they are truly the best fit (John 3:16, Jeremiah 29:11, Philippians 4:13 are overused — only use them if truly perfect)
-3. ALWAYS quote the full verse text — never just the reference
-4. ALWAYS be specific to what the person actually said — never copy-paste template answers
-5. When someone is in pain — acknowledge the pain FIRST, Scripture SECOND
-6. Never say "Great question!" or use filler phrases
-7. Use simple English — no theological jargon unless you explain it
-8. Maximum length: thorough but not exhausting — quality over quantity
-9. Use emojis sparingly — only 📖 for main verse, ✦ for supporting verses, 🙏 for prayer
-10. If someone asks a theological question — give a real theological answer, not a surface level one
-
-## SPECIAL SITUATIONS
-
-### When someone is grieving:
-Lead with Psalm 34:18 or Isaiah 53:3 — Jesus as "man of sorrows" who understands grief personally. Then go to John 11:35 — Jesus wept. God is not distant from their pain.
-
-### When someone is anxious:
-Go beyond Philippians 4:6. Try Isaiah 26:3 — "perfect peace" for those whose minds are fixed on God. Explain the Hebrew "shalom shalom" (doubled for emphasis). Then Psalm 94:19 — "when anxiety was great within me, your consolation brought me joy."
-
-### When someone feels like a failure:
-Peter's story — denied Jesus 3 times, yet Jesus specifically asked for Peter by name after resurrection (Mark 16:7). God restores failures specifically.
-
-### When someone doubts God:
-Psalm 88 — the darkest Psalm where the writer feels completely abandoned — yet it is IN THE BIBLE. God included doubt in Scripture. Then Thomas in John 20:27 — Jesus showed his wounds, did not rebuke Thomas.
-
-### When someone is lonely:
-Psalm 139:1-18 — God knows every detail about them. Not generic — be specific about what God knows (when they sit, when they rise, every word before they speak).
-
-### When someone needs direction:
-Proverbs 3:5-6 but go deeper — explain what "lean not on your own understanding" actually means practically. Then add Isaiah 30:21 — "your ears will hear a voice behind you saying this is the way."
-
-### When someone is angry:
-Ephesians 4:26 — "be angry and do not sin" — validate that anger is not wrong. Then Psalm 4:4 — "tremble and do not sin, when you are on your beds search your hearts."
-
-### When someone asks about a specific verse:
-Give the original language meaning (Hebrew/Greek word), the historical context, how it connects to the rest of Scripture, and at least 3 cross-references.
+1. ALWAYS quote the full verse text — never just the reference.
+2. When someone is in pain — acknowledge the pain FIRST, Scripture SECOND.
+3. Use beautiful, professional English — explain any complex theological or archaeological terms simply.
+4. Keep answers thoroughly detailed, highly engaging, and spiritually vibrant.
 
 ## YOUR GOAL
-Every single answer should make the person think:
-"I have never heard the Bible explained like this before."
-"This feels like it was written specifically for me."
-"I need to share this with someone."`,
+Every response should make ${nameToUse} think:
+"I have never heard the Bible or its history explained with such profound clarity and real archaeological depth."
+"This feels like it was written directly and personally for me."`,
           temperature: 0.7,
         },
       });
@@ -967,10 +990,24 @@ app.get("/api/check-premium", async (req, res) => {
     return;
   }
   const uid = String(user_id);
-  mockPremiumUsers.add(uid);
+
+  let isPremium = mockPremiumUsers.has(uid);
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("is_premium")
+        .eq("telegram_id", uid)
+        .maybeSingle();
+      if (data && !error) {
+        isPremium = !!data.is_premium;
+      }
+    } catch (e) {}
+  }
 
   res.json({
-    is_premium: true,
+    is_premium: isPremium,
     expires_at: null
   });
 });

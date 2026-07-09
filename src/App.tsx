@@ -112,7 +112,10 @@ export default function App() {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [isAiTyping, setIsAiTyping] = useState(false);
-  const [freeQuestionsLeft, setFreeQuestionsLeft] = useState(10);
+  const [freeQuestionsLeft, setFreeQuestionsLeft] = useState<number>(() => {
+    const cached = localStorage.getItem("bm_fq_left");
+    return cached !== null ? parseInt(cached, 10) : 10;
+  });
   const [selectedPromptChip, setSelectedPromptChip] = useState("");
   const [showAiLimitModal, setShowAiLimitModal] = useState(false);
   const [referralCount, setReferralCount] = useState<number>(() => {
@@ -163,7 +166,16 @@ export default function App() {
   const [hasNotifiedTop10, setHasNotifiedTop10] = useState<Record<string, boolean>>({});
 
   // Checkout & Donation Simulator States
-  const [isPremium, setIsPremium] = useState(true);
+  const [isPremium, setIsPremium] = useState<boolean>(() => {
+    const cacheUserStr = localStorage.getItem("bm_user");
+    if (cacheUserStr) {
+      try {
+        const u = JSON.parse(cacheUserStr);
+        return !!u.is_premium;
+      } catch (e) {}
+    }
+    return false;
+  });
   
   // TON Connect Subscription States
   const tonConnectRef = useRef<TonConnectUI | null>(null);
@@ -325,7 +337,7 @@ export default function App() {
         lang: telegUser.language_code || "en",
         streak_count: 1,
         last_active: today,
-        is_premium: true,
+        is_premium: false,
         verses_read: 0,
         photo_url: telegUser.photo_url || undefined,
       };
@@ -334,7 +346,6 @@ export default function App() {
     } else if (cacheUserStr) {
       try {
         baseUser = JSON.parse(cacheUserStr);
-        baseUser.is_premium = true;
       } catch (e) {
         baseUser = createDefaultGuestUser();
       }
@@ -362,9 +373,9 @@ export default function App() {
             ...baseLocalUser,
             streak_count: result.user_data.streak_count || baseLocalUser.streak_count,
             last_active: result.user_data.last_active || baseLocalUser.last_active,
-            is_premium: true,
-            premium_status: "active",
-            premium_expires_at: null,
+            is_premium: result.user_data.is_premium !== undefined ? !!result.user_data.is_premium : baseLocalUser.is_premium,
+            premium_status: result.user_data.premium_status || baseLocalUser.premium_status || "free",
+            premium_expires_at: result.user_data.premium_expires_at || baseLocalUser.premium_expires_at || null,
             wallet_address: result.user_data.wallet_address || null,
             last_transaction_hash: result.user_data.last_transaction_hash || null,
             verses_read: result.user_data.verses_read !== undefined ? result.user_data.verses_read : baseLocalUser.verses_read,
@@ -419,7 +430,7 @@ export default function App() {
           triggerSupabaseSync(cloudUser, result.prayers || [], result.saved_verses || [], result.chat_history || [], readingPlans, result.reminders || reminders);
         } else {
           // New user or Supabase connection unconfigured. Operate with baseLocalUser and sync down
-          const validatedLocalUser = evaluateStreakAndValidate({ ...baseLocalUser, is_premium: true, premium_status: "active" });
+          const validatedLocalUser = evaluateStreakAndValidate(baseLocalUser);
           setCurrentUser(validatedLocalUser);
           setIsPremium(validatedLocalUser.is_premium);
           setPremiumStatus(validatedLocalUser.premium_status || (validatedLocalUser.is_premium ? "active" : "free"));
@@ -628,7 +639,7 @@ export default function App() {
       lang: "en",
       streak_count: 3,
       last_active: new Date().toISOString().split("T")[0],
-      is_premium: true,
+      is_premium: false,
       verses_read: 8,
     };
   };
@@ -857,7 +868,7 @@ export default function App() {
 
     triggerHapticImpact("medium");
 
-    if (freeQuestionsLeft <= 0) {
+    if (!isPremium && freeQuestionsLeft <= 0) {
       triggerHapticNotification("warning");
       setShowAiLimitModal(true);
       return;
@@ -875,16 +886,22 @@ export default function App() {
     setChatInput("");
     setIsAiTyping(true);
 
-    // Charge state metric
-    const updatedFq = Math.max(0, freeQuestionsLeft - 1);
-    setFreeQuestionsLeft(updatedFq);
-    localStorage.setItem("bm_fq_left", String(updatedFq));
+    // Charge state metric if not premium
+    if (!isPremium) {
+      const updatedFq = Math.max(0, freeQuestionsLeft - 1);
+      setFreeQuestionsLeft(updatedFq);
+      localStorage.setItem("bm_fq_left", String(updatedFq));
+    }
 
     try {
       const response = await fetch("/api/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: promptText })
+        body: JSON.stringify({
+          message: promptText,
+          chatHistory: chatHistory,
+          userName: currentUser?.first_name || "Believer"
+        })
       });
 
       if (!response.ok) throw new Error();
@@ -2533,8 +2550,16 @@ Thank you for supporting Bible Manna! Please transfer the TON from your non-cust
                 {/* Top stats bar */}
                 <div className="flex items-center justify-between px-4 py-3 glass-premium rounded-[20px] mb-4">
                   <span className="text-xs text-[#EEE9E0]/60">
-                    AI Queries: <strong className="text-[#D4A843]">Unlimited ✦</strong>
+                    AI Queries: <strong className="text-[#D4A843]">{isPremium ? "Unlimited ✦" : `${freeQuestionsLeft} / 10 Left`}</strong>
                   </span>
+                  {!isPremium && (
+                    <button
+                      onClick={() => setCurrentScreen("profile")}
+                      className="text-[10px] uppercase font-bold text-[#D4A843] hover:underline cursor-pointer"
+                    >
+                      Upgrade 👑
+                    </button>
+                  )}
                 </div>
 
                 {/* Suggestions chips folder */}
