@@ -548,7 +548,7 @@ app.post("/api/ask", async (req, res) => {
 
   for (let i = 0; i < attempts; i++) {
     try {
-      const modelToUse = i === 0 ? "gemini-2.5-flash" : "gemini-1.5-flash";
+      const modelToUse = i === 0 ? "gemini-3.5-flash" : "gemini-flash-latest";
       response = await activeAi.models.generateContent({
         model: modelToUse,
         contents: contents,
