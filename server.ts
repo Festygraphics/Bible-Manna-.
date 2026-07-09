@@ -13,21 +13,28 @@ const PORT = 3000;
 app.use(express.json());
 
 // Initialize Gemini Client
-const apiKey = process.env.GEMINI_API_KEY;
 let ai: GoogleGenAI | null = null;
-if (apiKey && apiKey !== "MY_GEMINI_API_KEY") {
-  try {
-    ai = new GoogleGenAI({
-      apiKey: apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
-  } catch (error) {
-    console.error("Failed to initialize GoogleGenAI:", error);
+function getAiClient(): GoogleGenAI | null {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey === "MY_GEMINI_API_KEY") {
+    return null;
   }
+  if (!ai) {
+    try {
+      ai = new GoogleGenAI({
+        apiKey: apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      });
+      console.log("Lazy initialized GoogleGenAI client successfully.");
+    } catch (error) {
+      console.error("Failed to lazy initialize GoogleGenAI:", error);
+    }
+  }
+  return ai;
 }
 
 // Initialize Supabase Client if credentials are provided in env secrets
@@ -120,7 +127,7 @@ async function safeUsersQuery(
 
 // API routes
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", geminiConfigured: !!ai, supabaseConfigured: !!supabase });
+  res.json({ status: "ok", geminiConfigured: !!getAiClient(), supabaseConfigured: !!supabase });
 });
 
 // Retrieve all user states and metadata from Supabase (Full-stack Proxy)
@@ -502,8 +509,10 @@ app.post("/api/ask", async (req, res) => {
     return;
   }
 
+  const activeAi = getAiClient();
+
   // Fallback if Gemini key is missing or not configured
-  if (!ai) {
+  if (!activeAi) {
     // Generate a beautiful, wise pseudo-AI response based on Christian principles so that it NEVER breaks, even without keys!
     setTimeout(() => {
       const response = getWiseFallbackResponse(message);
@@ -534,13 +543,13 @@ app.post("/api/ask", async (req, res) => {
 
   let response: any = null;
   let lastError: any = null;
-  const attempts = 3;
-  let delay = 600;
+  const attempts = process.env.VERCEL ? 2 : 3;
+  let delay = process.env.VERCEL ? 300 : 500;
 
   for (let i = 0; i < attempts; i++) {
     try {
       const modelToUse = i === 0 ? "gemini-2.5-flash" : "gemini-1.5-flash";
-      response = await ai.models.generateContent({
+      response = await activeAi.models.generateContent({
         model: modelToUse,
         contents: contents,
         config: {
