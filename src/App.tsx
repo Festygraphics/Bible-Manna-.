@@ -112,7 +112,7 @@ export default function App() {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [isAiTyping, setIsAiTyping] = useState(false);
-  const [freeQuestionsLeft, setFreeQuestionsLeft] = useState(5);
+  const [freeQuestionsLeft, setFreeQuestionsLeft] = useState(10);
   const [selectedPromptChip, setSelectedPromptChip] = useState("");
   const [showAiLimitModal, setShowAiLimitModal] = useState(false);
   const [referralCount, setReferralCount] = useState<number>(() => {
@@ -490,12 +490,12 @@ export default function App() {
 
     // Dynamic free questions reset checking
     const cacheFqDate = localStorage.getItem("bm_fq_date");
-    let initialFqLeft = 5;
+    let initialFqLeft = 10;
     if (cacheFqDate !== today) {
       localStorage.setItem("bm_fq_date", today);
-      localStorage.setItem("bm_fq_left", "5");
+      localStorage.setItem("bm_fq_left", "10");
     } else {
-      initialFqLeft = parseInt(localStorage.getItem("bm_fq_left") || "5", 10);
+      initialFqLeft = parseInt(localStorage.getItem("bm_fq_left") || "10", 10);
     }
     setFreeQuestionsLeft(initialFqLeft);
 
@@ -659,7 +659,7 @@ export default function App() {
         
         let targetScore = user.streak_count;
         if (tab === "verses") targetScore = versesRead || 12;
-        if (tab === "questions") targetScore = 5 - freeQuestionsLeft;
+        if (tab === "questions") targetScore = 10 - freeQuestionsLeft;
         if (tab === "prayers") targetScore = prayers.length || 2;
 
         if (userRow) {
@@ -854,7 +854,7 @@ export default function App() {
 
     triggerHapticImpact("medium");
 
-    if (freeQuestionsLeft <= 0 && !isPremium) {
+    if (freeQuestionsLeft <= 0) {
       triggerHapticNotification("warning");
       setShowAiLimitModal(true);
       return;
@@ -873,11 +873,9 @@ export default function App() {
     setIsAiTyping(true);
 
     // Charge state metric
-    if (!isPremium) {
-      const updatedFq = Math.max(0, freeQuestionsLeft - 1);
-      setFreeQuestionsLeft(updatedFq);
-      localStorage.setItem("bm_fq_left", String(updatedFq));
-    }
+    const updatedFq = Math.max(0, freeQuestionsLeft - 1);
+    setFreeQuestionsLeft(updatedFq);
+    localStorage.setItem("bm_fq_left", String(updatedFq));
 
     try {
       const response = await fetch("/api/ask", {
@@ -3710,8 +3708,8 @@ The Greek word used for love in Romans is *agape* — representing a covenantal,
                       <Sparkles size={16} />
                     </div>
                     <div>
-                      <h3 className="font-serif text-[#D4A843] text-sm font-bold tracking-wider uppercase">AI Limit Exhausted</h3>
-                      <p className="text-[9px] text-[#EEE9E0]/45 tracking-wider uppercase font-mono mt-0.5">Free Daily Guidance Cap Met</p>
+                      <h3 className="font-serif text-[#D4A843] text-sm font-bold tracking-wider uppercase">Support Bible Manna</h3>
+                      <p className="text-[9px] text-[#EEE9E0]/45 tracking-wider uppercase font-mono mt-0.5">Daily AI Limit Reached</p>
                     </div>
                   </div>
                   <button 
@@ -3725,35 +3723,35 @@ The Greek word used for love in Romans is *agape* — representing a covenantal,
                 {/* Main Message */}
                 <div className="space-y-2 text-left">
                   <p className="text-xs text-[#EEE9E0]/80 leading-relaxed">
-                    You have utilized today's <strong>5 free AI queries</strong>. To keep consulting the Bible Counselor without interruptions, please choose one of these faithful options:
+                    You have utilized today's <strong>10 free AI queries</strong>. To get longer, unrestricted AI queries and support continued development, please choose one of these faithful options:
                   </p>
                 </div>
 
                 {/* Option 1: Subscribe Card */}
                 <div className="p-4 rounded-[20px] bg-gradient-to-br from-[#D4A843]/10 to-transparent border border-[#D4A843]/20 text-left space-y-3 relative overflow-hidden">
                   <span className="absolute top-1 right-2.5 text-[8px] font-bold text-[#D4A843] bg-[#D4A843]/10 px-2 py-0.5 rounded-full uppercase tracking-widest font-mono">
-                    Unlimited
+                    Support choice
                   </span>
                   <div className="flex gap-2.5 items-start animate-fade-in">
                     <div className="p-2 rounded-xl bg-[#D4A843]/10 text-[#D4A843] mt-0.5">
                       <Sparkles size={16} />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-white uppercase tracking-wider">Option A: Upgrade to Premium</h4>
+                      <h4 className="text-xs font-bold text-white uppercase tracking-wider">Option A: Support Bible Manna</h4>
                       <p className="text-[10px] text-[#EEE9E0]/60 leading-relaxed mt-1">
-                        Support the ministry and unlock unlimited instant AI questions, premium offline reading themes, and streak protection mechanisms.
+                        Support the development of Bible Manna with Telegram Stars to get longer, faster, and unrestricted spiritual AI reflections.
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => {
                       setShowAiLimitModal(false);
-                      goTo("premium");
+                      goTo("donate");
                       triggerHapticImpact("medium");
                     }}
                     className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#D4A843] to-[#A87820] text-black font-extrabold text-[10px] uppercase tracking-wider shadow-lg glow-gold active:scale-97 transition-all cursor-pointer text-center"
                   >
-                    Subscribe & Upgrade
+                    Support & Donate Stars
                   </button>
                 </div>
 
