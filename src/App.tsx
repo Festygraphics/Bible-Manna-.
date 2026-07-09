@@ -178,6 +178,9 @@ export default function App() {
   const [customStarAmount, setCustomStarAmount] = useState("");
   const [isCustomDonationModalOpen, setIsCustomDonationModalOpen] = useState(false);
   const [customDonationError, setCustomDonationError] = useState("");
+  const [supportTab, setSupportTab] = useState<"ton" | "stars">("ton");
+  const [customTonAmount, setCustomTonAmount] = useState("");
+  const [customTonError, setCustomTonError] = useState("");
   const [isPaying, setIsPaying] = useState(false);
   const [paymentSuccessMessage, setPaymentSuccessMessage] = useState("");
   const [sandboxPaymentDetails, setSandboxPaymentDetails] = useState<{
@@ -1547,6 +1550,59 @@ The Greek word used for love in Romans is *agape* — representing a covenantal,
     }
     setCustomDonationError("");
     handleSendDonation(amt, "Custom Stars Support");
+  };
+
+  const handleCopyWalletAddress = (amountStr?: string) => {
+    const walletAddress = "UQBalyO_DRq-Mjt235gLy05GNB8C26hL7CScN7daFL-PlYP3";
+    triggerHapticNotification("success");
+    
+    const copyAndShow = () => {
+      setPaymentSuccessMessage(`📋 TON Wallet Address Copied!
+
+Address: ${walletAddress}
+${amountStr ? `Selected Variety: ${amountStr}\n` : ""}
+Thank you for supporting Bible Manna! Please transfer the TON from your non-custodial wallet (e.g. Tonkeeper, MyTonWallet). Your seed helps keep the spiritual counselor completely free and fast for everyone.`);
+      
+      const systemMsg: ChatMessage = {
+        id: "sys_" + Date.now(),
+        role: "bot",
+        text: `🙏 **Thank you for supporting Bible Manna!**\n\nYou have copied our TON wallet address to your clipboard.\n\n**Address:**\n\`${walletAddress}\`\n\n${amountStr ? `**Selected Variety:** ${amountStr}\n\n` : ""}Please complete the transfer in your TON Wallet (e.g., Tonkeeper). Your contribution directly keeps this app free, fast, and unrestricted for believers worldwide! May God bless your cheerful giving.`,
+        senderName: "Spiritual Counselor",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setChatHistory(prev => [...prev, systemMsg]);
+      showToast("Wallet address copied! 📋");
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(walletAddress)
+        .then(copyAndShow)
+        .catch(() => {
+          const tempInput = document.createElement("textarea");
+          tempInput.value = walletAddress;
+          document.body.appendChild(tempInput);
+          tempInput.select();
+          try {
+            document.execCommand("copy");
+            copyAndShow();
+          } catch (e) {
+            showToast("Failed to copy wallet address.");
+          }
+          document.body.removeChild(tempInput);
+        });
+    } else {
+      const tempInput = document.createElement("textarea");
+      tempInput.value = walletAddress;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand("copy");
+        copyAndShow();
+      } catch (e) {
+        showToast("Failed to copy wallet address.");
+      }
+      document.body.removeChild(tempInput);
+    }
   };
 
   // ── PREMIUM REFERRAL SYSTEM LOGIC ──
@@ -3142,97 +3198,144 @@ The Greek word used for love in Romans is *agape* — representing a covenantal,
                 {/* Visual support cards header */}
                 <div className="py-8 px-6 rounded-[32px] glass-premium text-center space-y-4">
                   <div className="w-16 h-16 rounded-[24px] bg-[#D4A843]/10 border border-[#D4A843]/20 flex items-center justify-center text-[#D4A843] mx-auto animate-pulse">
-                    <span className="text-3xl">⭐</span>
+                    <span className="text-3xl">💎</span>
                   </div>
-                  <h1 className="font-serif text-3xl font-extrabold text-[#D4A843]">Support Development</h1>
+                  <h1 className="font-serif text-3xl font-extrabold text-[#D4A843]">Support Bible Manna</h1>
                   <p className="font-sans text-xs text-[#EEE9E0]/70 max-w-sm mx-auto leading-relaxed">
-                    If you enjoy using this Mini App, you can support its continued development with a Telegram Stars donation. Donations are completely optional and help fund future improvements.
+                    If you enjoy using Bible Manna, your kind seed helps keep the spiritual counselor fast, unrestricted, and completely free for believers across the globe.
                   </p>
                 </div>
 
-                {/* Option amounts quick grid */}
-                <div>
-                  <h3 className="text-[10px] uppercase tracking-[0.2em] text-[#EEE9E0]/40 font-bold mb-3 pl-1">Support Tiers</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-6">
+                  {/* TON Header Banner */}
+                  <div className="py-6 px-5 rounded-[24px] bg-gradient-to-br from-[#D4A843]/15 to-transparent border border-[#D4A843]/20 space-y-2 text-left">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#D4A843]/10 border border-[#D4A843]/20 flex items-center justify-center text-[#D4A843]">
+                        <span className="text-xl">💎</span>
+                      </div>
+                      <div>
+                        <h3 className="font-serif text-[#D4A843] text-sm font-bold tracking-wider uppercase">Direct TON Transfer</h3>
+                        <p className="text-[9px] text-[#EEE9E0]/45 tracking-wider uppercase font-mono">Voluntary Crypto Seeds</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-[#EEE9E0]/70 leading-relaxed pt-1">
+                      Select a variety below to copy our TON wallet address and copy the exact amount. Send from any non-custodial TON wallet (Tonkeeper, MyTonWallet, etc.).
+                    </p>
                     
-                    <div 
-                      onClick={() => handleSendDonation(50, "Voluntary Support (50 Stars)")}
-                      className="p-5 glass-premium-interact rounded-[24px] text-center cursor-pointer flex flex-col justify-center min-h-[120px]"
-                    >
-                      <span className="text-2xl block mb-2">🌿</span>
-                      <strong className="text-[#D4A843] block text-sm">⭐ 50 Stars</strong>
-                      <span className="text-[10px] text-[#EEE9E0]/50 mt-1 leading-normal">Helper Seed</span>
+                    {/* Direct wallet address card */}
+                    <div className="mt-4 p-4 rounded-xl bg-black/40 border border-white/5 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-[#EEE9E0]/40 font-mono">OUR WALLET ADDRESS:</span>
+                        <span className="text-[9px] bg-teal-500/15 text-teal-400 px-1.5 py-0.5 rounded uppercase font-bold font-mono tracking-widest">Active</span>
+                      </div>
+                      <div className="bg-white/5 p-3 rounded-lg border border-white/15 break-all text-[11px] font-mono text-white select-all">
+                        UQBalyO_DRq-Mjt235gLy05GNB8C26hL7CScN7daFL-PlYP3
+                      </div>
+                      <button
+                        onClick={() => handleCopyWalletAddress()}
+                        className="w-full mt-2 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-xs hover:bg-white/10 active:scale-97 transition-all cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        <Copy size={14} />
+                        <span>Copy Wallet Address</span>
+                      </button>
                     </div>
+                  </div>
 
-                    <div 
-                      onClick={() => handleSendDonation(100, "Voluntary Support (100 Stars)")}
-                      className="p-5 glass-premium-interact rounded-[24px] text-center cursor-pointer flex flex-col justify-center min-h-[120px]"
-                    >
-                      <span className="text-2xl block mb-2">☕</span>
-                      <strong className="text-[#D4A843] block text-sm">⭐ 100 Stars</strong>
-                      <span className="text-[10px] text-[#EEE9E0]/50 mt-1 leading-normal">Cheerful Giver</span>
+                  {/* TON Option Tiers */}
+                  <div className="text-left">
+                    <h3 className="text-[10px] uppercase tracking-[0.2em] text-[#EEE9E0]/40 font-bold mb-3 pl-1">Select TON Variety Seed</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div 
+                        onClick={() => handleCopyWalletAddress("1 TON (Helper Seed)")}
+                        className="p-5 glass-premium-interact rounded-[24px] text-center cursor-pointer flex flex-col justify-center min-h-[120px] transition-all hover:scale-102"
+                      >
+                        <span className="text-2xl block mb-2">🌿</span>
+                        <strong className="text-[#D4A843] block text-sm">💎 1 TON</strong>
+                        <span className="text-[10px] text-[#EEE9E0]/50 mt-1 leading-normal">Helper Seed</span>
+                      </div>
+
+                      <div 
+                        onClick={() => handleCopyWalletAddress("5 TON (Cheerful Giver)")}
+                        className="p-5 glass-premium-interact rounded-[24px] text-center cursor-pointer flex flex-col justify-center min-h-[120px] transition-all hover:scale-102"
+                      >
+                        <span className="text-2xl block mb-2">☕</span>
+                        <strong className="text-[#D4A843] block text-sm">💎 5 TON</strong>
+                        <span className="text-[10px] text-[#EEE9E0]/50 mt-1 leading-normal">Cheerful Giver</span>
+                      </div>
+
+                      <div 
+                        onClick={() => handleCopyWalletAddress("20 TON (Blessed Builder)")}
+                        className="p-5 glass-premium-interact rounded-[24px] text-center cursor-pointer flex flex-col justify-center min-h-[120px] transition-all hover:scale-102"
+                      >
+                        <span className="text-2xl block mb-2">👑</span>
+                        <strong className="text-[#D4A843] block text-sm">💎 20 TON</strong>
+                        <span className="text-[10px] text-[#EEE9E0]/50 mt-1 leading-normal">Blessed Builder</span>
+                      </div>
+
+                      <div 
+                        onClick={() => {
+                          triggerHapticImpact("light");
+                          const focusInput = document.getElementById("custom-ton-input");
+                          if (focusInput) focusInput.focus();
+                        }}
+                        className="p-5 glass-premium-interact rounded-[24px] text-center cursor-pointer flex flex-col justify-center min-h-[120px] transition-all hover:scale-102"
+                      >
+                        <span className="text-2xl block mb-2">✨</span>
+                        <strong className="text-[#D4A843] block text-sm">💎 Custom TON</strong>
+                        <span className="text-[10px] text-[#EEE9E0]/50 mt-1 leading-normal">Your own choice</span>
+                      </div>
                     </div>
+                  </div>
 
-                    <div 
-                      onClick={() => handleSendDonation(500, "Voluntary Support (500 Stars)")}
-                      className="p-5 glass-premium-interact rounded-[24px] text-center cursor-pointer flex flex-col justify-center min-h-[120px]"
-                    >
-                      <span className="text-2xl block mb-2">👑</span>
-                      <strong className="text-[#D4A843] block text-sm">⭐ 500 Stars</strong>
-                      <span className="text-[10px] text-[#EEE9E0]/50 mt-1 leading-normal">Blessed Builder</span>
-                    </div>
-
-                    <div 
-                      onClick={() => {
-                        triggerHapticImpact("light");
-                        setIsCustomDonationModalOpen(true);
+                  {/* Custom TON Input block */}
+                  <div className="p-5 rounded-[24px] glass-premium space-y-4 text-left">
+                    <h4 className="text-[10px] uppercase tracking-[0.2em] text-[#EEE9E0]/40 font-bold pl-1 font-sans">Or Enter Custom TON Amount</h4>
+                    <input 
+                      id="custom-ton-input"
+                      type="number"
+                      step="0.1"
+                      value={customTonAmount}
+                      onChange={e => {
+                        setCustomTonAmount(e.target.value);
+                        if (e.target.value && Number(e.target.value) > 0) {
+                          setCustomTonError("");
+                        }
                       }}
-                      className="p-5 glass-premium-interact rounded-[24px] text-center cursor-pointer flex flex-col justify-center min-h-[120px]"
+                      placeholder="Enter custom TON amount e.g. 2.5"
+                      className="w-full py-3.5 px-4 bg-white/5 border border-white/10 rounded-xl text-white outline-none font-mono focus:border-[#D4A843]/30 transition-all text-sm"
+                    />
+                    {customTonError && (
+                      <div className="text-red-400 text-[11px] font-sans font-medium text-left bg-red-500/10 border border-red-500/20 py-2 px-3 rounded-lg">
+                        ⚠️ {customTonError}
+                      </div>
+                    )}
+                    <button 
+                      onClick={() => {
+                        const val = customTonAmount.trim();
+                        if (!val) {
+                          setCustomTonError("Please enter an amount.");
+                          showToast("Please enter a custom TON amount.");
+                          return;
+                        }
+                        const amt = Number(val);
+                        if (isNaN(amt) || amt <= 0) {
+                          setCustomTonError("Please enter a positive TON amount.");
+                          showToast("Please enter a valid amount.");
+                          return;
+                        }
+                        setCustomTonError("");
+                        handleCopyWalletAddress(`${amt} TON`);
+                      }}
+                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#D4A843] to-[#A87820] text-black font-extrabold text-xs uppercase tracking-widest cursor-pointer hover:opacity-90 active:scale-97 shadow-lg transition-all"
                     >
-                      <span className="text-2xl block mb-2">✨</span>
-                      <strong className="text-[#D4A843] block text-sm">⭐ Custom Amount</strong>
-                      <span className="text-[10px] text-[#EEE9E0]/50 mt-1 leading-normal">Your own choice</span>
-                    </div>
-
+                      Copy Address & Select Amount
+                    </button>
                   </div>
                 </div>
-
-                {/* Custom stars inputs */}
-                <div className="p-5 rounded-[24px] glass-premium space-y-4">
-                  <h4 className="text-[10px] uppercase tracking-[0.2em] text-[#EEE9E0]/40 font-bold pl-1 font-sans">Or Enter Custom Stars Support Choice</h4>
-                  <input 
-                    type="number"
-                    value={customStarAmount}
-                    onChange={e => {
-                      setCustomStarAmount(e.target.value);
-                      if (e.target.value && Number.isInteger(Number(e.target.value)) && Number(e.target.value) > 0) {
-                        setCustomDonationError("");
-                      }
-                    }}
-                    placeholder="Enter custom stars e.g. 150"
-                    className="w-full py-3.5 px-4 bg-white/5 border border-white/10 rounded-xl text-white outline-none font-mono focus:border-teal-500/30 transition-all text-sm"
-                  />
-                  {customDonationError && (
-                    <div className="text-red-400 text-[11px] font-sans font-medium text-left bg-red-500/10 border border-red-500/20 py-2 px-3 rounded-lg">
-                      ⚠️ {customDonationError}
-                    </div>
-                  )}
-                  <button 
-                    onClick={handleCustomDonationBtn}
-                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-teal-500 to-teal-600 text-black font-extrabold text-xs uppercase tracking-widest cursor-pointer hover:opacity-90 active:scale-97 shadow-lg transition-all"
-                  >
-                    Donate Custom Stars
-                  </button>
-                </div>
-
-                {isPaying && (
-                  <div className="py-4 text-center text-xs font-mono text-[#EEE9E0]/40 animate-pulse">
-                    Opening Telegram Sandbox checkout node... Please hold.
-                  </div>
-                )}
 
                 {paymentSuccessMessage && (
-                  <div className="p-5 rounded-[24px] bg-teal-500/10 border border-teal-500/20 text-xs text-teal-400 leading-relaxed text-center font-semibold">
+                  <div className="p-5 rounded-[24px] bg-[#D4A843]/10 border border-[#D4A843]/20 text-xs text-white leading-relaxed text-left font-sans whitespace-pre-line select-all animate-fade-in relative overflow-hidden">
+                    <span className="absolute top-1.5 right-2 text-[8px] bg-[#D4A843]/20 text-[#D4A843] font-bold px-1.5 py-0.5 rounded font-mono uppercase">Copied</span>
                     {paymentSuccessMessage}
                   </div>
                 )}
